@@ -1,7 +1,6 @@
 /* Copyright 2018 Urban Airship and Contributors */
 
 #import <Foundation/Foundation.h>
-#import <CoreLocation/CoreLocation.h>
 #import "UAComponent.h"
 
 /**
@@ -63,16 +62,6 @@ NS_ASSUME_NONNULL_BEGIN
  * Flag to allow/disallow location updates in the background. Defaults to `NO`.
  */
 @property (nonatomic, assign, getter=isBackgroundLocationUpdatesAllowed) BOOL backgroundLocationUpdatesAllowed;
-
-/**
- * UALocationDelegate to receive location callbacks.
- */
-@property (nonatomic, weak, nullable) id <UALocationDelegate> delegate;
-
-/**
- * Returns the last received location. Can be nil if no location has been received.
- */
-@property (nonatomic, readonly, nullable) CLLocation *lastLocation;
 
 NS_ASSUME_NONNULL_END
 

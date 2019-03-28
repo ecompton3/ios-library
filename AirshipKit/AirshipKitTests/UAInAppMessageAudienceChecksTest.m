@@ -29,7 +29,6 @@
     [[[self.mockAirship stub] andReturn:self.mockPush] sharedPush];
     [UAirship setSharedAirship:self.mockAirship];
 
-    self.mockLocationManager = [self mockForClass:[CLLocationManager class]];
 }
 
 - (void)testEmptyAudience {
@@ -37,27 +36,6 @@
     }];
     
     XCTAssertTrue([UAInAppMessageAudienceChecks checkDisplayAudienceConditions:audience]);
-}
-
-- (void)testLocationOptIn {
-    [[[self.mockLocationManager stub] andReturnValue:@(kCLAuthorizationStatusAuthorizedAlways)] authorizationStatus];
-
-    // setup
-    UAInAppMessageAudience *requiresOptedIn = [UAInAppMessageAudience audienceWithBuilderBlock:^(UAInAppMessageAudienceBuilder * _Nonnull builder) {
-        builder.locationOptIn = @YES;
-    }];
-    
-    UAInAppMessageAudience *requiresOptedOut = [UAInAppMessageAudience audienceWithBuilderBlock:^(UAInAppMessageAudienceBuilder * _Nonnull builder) {
-        builder.locationOptIn = @NO;
-    }];
-    
-    id mockLocation = [self strictMockForClass:[UALocation class]];
-    [[[mockLocation stub] andReturnValue:@YES] isLocationUpdatesEnabled];
-    [[[self.mockAirship stub] andReturn:mockLocation] sharedLocation];
-
-    // test
-    XCTAssertTrue([UAInAppMessageAudienceChecks checkDisplayAudienceConditions:requiresOptedIn]);
-    XCTAssertFalse([UAInAppMessageAudienceChecks checkDisplayAudienceConditions:requiresOptedOut]);
 }
 
 - (void)testLocationOptOut {

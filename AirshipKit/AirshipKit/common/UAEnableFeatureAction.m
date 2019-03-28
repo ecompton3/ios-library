@@ -51,15 +51,7 @@ NSString *const UAEnableBackgroundLocationActionValue = @"background_location";
 }
 
 - (BOOL)isLocationDeniedOrRestricted {
-    switch ([CLLocationManager authorizationStatus]) {
-        case kCLAuthorizationStatusDenied:
-        case kCLAuthorizationStatusRestricted:
             return YES;
-        case kCLAuthorizationStatusNotDetermined:
-        case kCLAuthorizationStatusAuthorizedAlways:
-        case kCLAuthorizationStatusAuthorizedWhenInUse:
-            return NO;
-    }
 }
 
 - (void)navigateToSystemSettings {

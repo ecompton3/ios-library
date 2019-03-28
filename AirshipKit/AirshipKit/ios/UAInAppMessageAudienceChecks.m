@@ -122,19 +122,7 @@
 }
 
 + (BOOL)isLocationOptedIn {
-    if (![UAirship location].locationUpdatesEnabled) {
         return NO;
-    }
-
-    switch ([CLLocationManager authorizationStatus]) {
-        case kCLAuthorizationStatusDenied:
-        case kCLAuthorizationStatusRestricted:
-        case kCLAuthorizationStatusNotDetermined:
-            return NO;
-        case kCLAuthorizationStatusAuthorizedAlways:
-        case kCLAuthorizationStatusAuthorizedWhenInUse:
-            return YES;
-    }
 }
 
 + (BOOL)isNotificationsOptedIn {

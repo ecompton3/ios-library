@@ -1,7 +1,5 @@
 /* Copyright 2018 Urban Airship and Contributors */
 
-#import <CoreLocation/CoreLocation.h>
-
 #import "UAirship+Internal.h"
 
 #import "UAUser+Internal.h"
@@ -116,7 +114,6 @@ BOOL uaLoudImpErrorLoggingEnabled = YES;
 
         self.sharedAnalytics = [UAAnalytics analyticsWithConfig:config dataStore:dataStore];
         self.whitelist = [UAWhitelist whitelistWithConfig:config];
-        self.sharedLocation = [UALocation locationWithAnalytics:self.sharedAnalytics dataStore:dataStore];
         self.sharedAutomation = [UAAutomation automationWithConfig:config dataStore:dataStore];
         self.sharedRemoteDataManager = [UARemoteDataManager remoteDataManagerWithConfig:config dataStore:dataStore];
 

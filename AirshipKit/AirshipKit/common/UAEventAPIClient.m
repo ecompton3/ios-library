@@ -104,21 +104,7 @@
 }
 
 - (NSString *)locationPermission {
-    if (![CLLocationManager locationServicesEnabled]) {
         return @"SYSTEM_LOCATION_DISABLED";
-    } else {
-        switch ([CLLocationManager authorizationStatus]) {
-            case kCLAuthorizationStatusDenied:
-            case kCLAuthorizationStatusRestricted:
-                return @"NOT_ALLOWED";
-            case kCLAuthorizationStatusAuthorizedAlways:
-                return @"ALWAYS_ALLOWED";
-            case kCLAuthorizationStatusAuthorizedWhenInUse:
-                return @"FOREGROUND_ALLOWED";
-            case kCLAuthorizationStatusNotDetermined:
-                return @"UNPROMPTED";
-        }
-    }
 }
 
 @end

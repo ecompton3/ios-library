@@ -4916,12 +4916,13 @@
 				TargetAttributes = {
 					494DD9561B0EB677009C134E = {
 						CreatedOnToolsVersion = 6.3.1;
-						DevelopmentTeam = PGJV57GD94;
+						DevelopmentTeam = Y32EQUAEWX;
 						DevelopmentTeamName = "Urban Airship Inc.";
+						ProvisioningStyle = Automatic;
 					};
 					CC64F0531D8B77E3009CEF27 = {
 						CreatedOnToolsVersion = 8.0;
-						DevelopmentTeam = PGJV57GD94;
+						DevelopmentTeam = Y32EQUAEWX;
 						LastSwiftMigration = 1000;
 						ProvisioningStyle = Automatic;
 					};
@@ -5108,7 +5109,7 @@
 			files = (
 			);
 			inputPaths = (
-				"${SRCROOT}/../Pods/Target Support Files/Pods-AirshipKitTests/Pods-AirshipKitTests-frameworks.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-AirshipKitTests/Pods-AirshipKitTests-frameworks.sh",
 				"${BUILT_PRODUCTS_DIR}/OCMock/OCMock.framework",
 				"${BUILT_PRODUCTS_DIR}/XcodeEdit/XcodeEdit.framework",
 			);
@@ -5119,7 +5120,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/../Pods/Target Support Files/Pods-AirshipKitTests/Pods-AirshipKitTests-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-AirshipKitTests/Pods-AirshipKitTests-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		DF6DD5011E7A1EB8000C281A /* Generate AirshipLib.h */ = {
@@ -6144,8 +6145,11 @@
 					armv7s,
 				);
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
+				CODE_SIGN_STYLE = Automatic;
 				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = Y32EQUAEWX;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
@@ -6165,6 +6169,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.urbanairship.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
 				VALID_ARCHS = "$(inherited) i386 x86_64";
 			};
@@ -6179,8 +6184,11 @@
 					armv7s,
 				);
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
+				CODE_SIGN_STYLE = Automatic;
 				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = Y32EQUAEWX;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
@@ -6199,6 +6207,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.urbanairship.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
 				VALID_ARCHS = "$(inherited) i386 x86_64";
 			};
@@ -6215,7 +6224,7 @@
 				CLANG_WARN_SUSPICIOUS_MOVES = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = PGJV57GD94;
+				DEVELOPMENT_TEAM = Y32EQUAEWX;
 				ENABLE_TESTABILITY = YES;
 				INFOPLIST_FILE = AirshipKitTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
@@ -6240,7 +6249,7 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_SUSPICIOUS_MOVES = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = NO;
-				DEVELOPMENT_TEAM = PGJV57GD94;
+				DEVELOPMENT_TEAM = Y32EQUAEWX;
 				INFOPLIST_FILE = AirshipKitTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				OTHER_LDFLAGS = (
