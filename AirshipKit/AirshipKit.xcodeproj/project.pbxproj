@@ -4912,13 +4912,12 @@
 				TargetAttributes = {
 					494DD9561B0EB677009C134E = {
 						CreatedOnToolsVersion = 6.3.1;
-						DevelopmentTeam = Y32EQUAEWX;
 						DevelopmentTeamName = "Urban Airship Inc.";
 						ProvisioningStyle = Automatic;
 					};
 					CC64F0531D8B77E3009CEF27 = {
 						CreatedOnToolsVersion = 8.0;
-						DevelopmentTeam = Y32EQUAEWX;
+						DevelopmentTeam = YQQCDVG64V;
 						LastSwiftMigration = 1000;
 						ProvisioningStyle = Automatic;
 					};
@@ -6145,7 +6144,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
 				CODE_SIGN_STYLE = Automatic;
 				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = Y32EQUAEWX;
+				DEVELOPMENT_TEAM = "";
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
@@ -6184,7 +6183,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
 				CODE_SIGN_STYLE = Automatic;
 				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = Y32EQUAEWX;
+				DEVELOPMENT_TEAM = "";
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
@@ -6220,7 +6219,7 @@
 				CLANG_WARN_SUSPICIOUS_MOVES = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = Y32EQUAEWX;
+				DEVELOPMENT_TEAM = YQQCDVG64V;
 				ENABLE_TESTABILITY = YES;
 				INFOPLIST_FILE = AirshipKitTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
@@ -6245,7 +6244,7 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_SUSPICIOUS_MOVES = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = NO;
-				DEVELOPMENT_TEAM = Y32EQUAEWX;
+				DEVELOPMENT_TEAM = YQQCDVG64V;
 				INFOPLIST_FILE = AirshipKitTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				OTHER_LDFLAGS = (
