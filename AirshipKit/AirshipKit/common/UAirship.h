@@ -8,7 +8,6 @@
 // Frameworks
 #import <SystemConfiguration/SystemConfiguration.h>
 #import <CoreData/CoreData.h>
-#import <CoreLocation/CoreLocation.h>
 #import <Security/Security.h>
 #import <QuartzCore/QuartzCore.h>
 #import <Availability.h>

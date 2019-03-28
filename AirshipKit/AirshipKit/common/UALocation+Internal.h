@@ -10,18 +10,13 @@
 /*
  * SDK-private extensions to UALocation
  */
-@interface UALocation() <CLLocationManagerDelegate>
+@interface UALocation()
 
 NS_ASSUME_NONNULL_BEGIN
 
 ///---------------------------------------------------------------------------------------
 /// @name Location Internal Properties
 ///---------------------------------------------------------------------------------------
-
-/**
- * The location manager.
- */
-@property (nonatomic, strong) CLLocationManager *locationManager;
 
 /**
  * The data store.

@@ -1334,7 +1334,6 @@
 		DF6596D51FBA3B810055E97B /* UAComponent.m in Sources */ = {isa = PBXBuildFile; fileRef = DF6596CF1FBA3B810055E97B /* UAComponent.m */; };
 		DF6596DD1FBBB77E0055E97B /* UAComponentTests.m in Sources */ = {isa = PBXBuildFile; fileRef = DF6596DC1FBBB77E0055E97B /* UAComponentTests.m */; };
 		DF6AD3BE1ED8A8B3006EB1DA /* UAURLRequestOperation+Internal.h in Headers */ = {isa = PBXBuildFile; fileRef = CC944ED01DB54CB400C42269 /* UAURLRequestOperation+Internal.h */; settings = {ATTRIBUTES = (Private, ); }; };
-		DF6AD3C01ED8A95B006EB1DA /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DF6AD3BF1ED8A95B006EB1DA /* CoreLocation.framework */; };
 		DF6AD3C21ED8A961006EB1DA /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DF6AD3C11ED8A961006EB1DA /* WebKit.framework */; };
 		DF6AD3C41ED8A969006EB1DA /* UserNotifications.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DF6AD3C31ED8A969006EB1DA /* UserNotifications.framework */; };
 		DF6AD3C61ED8A970006EB1DA /* JavaScriptCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DF6AD3C51ED8A970006EB1DA /* JavaScriptCore.framework */; };
@@ -2400,7 +2399,6 @@
 		DF6596CE1FBA3B810055E97B /* UAComponent.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = UAComponent.h; path = common/UAComponent.h; sourceTree = "<group>"; };
 		DF6596CF1FBA3B810055E97B /* UAComponent.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = UAComponent.m; path = common/UAComponent.m; sourceTree = "<group>"; };
 		DF6596DC1FBBB77E0055E97B /* UAComponentTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = UAComponentTests.m; sourceTree = "<group>"; };
-		DF6AD3BF1ED8A95B006EB1DA /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
 		DF6AD3C11ED8A961006EB1DA /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
 		DF6AD3C31ED8A969006EB1DA /* UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotifications.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
 		DF6AD3C51ED8A970006EB1DA /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
@@ -2473,7 +2471,6 @@
 			files = (
 				3C5264AC20DAEE2B00FCA903 /* CoreData.framework in Frameworks */,
 				992F89871EFD7F8600E4C8FE /* StoreKit.framework in Frameworks */,
-				DF6AD3C01ED8A95B006EB1DA /* CoreLocation.framework in Frameworks */,
 				DF6AD3C61ED8A970006EB1DA /* JavaScriptCore.framework in Frameworks */,
 				DF6AD3C41ED8A969006EB1DA /* UserNotifications.framework in Frameworks */,
 				DF6AD3C21ED8A961006EB1DA /* WebKit.framework in Frameworks */,
@@ -3203,7 +3200,6 @@
 				DF6AD3C51ED8A970006EB1DA /* JavaScriptCore.framework */,
 				DF6AD3C31ED8A969006EB1DA /* UserNotifications.framework */,
 				DF6AD3C11ED8A961006EB1DA /* WebKit.framework */,
-				DF6AD3BF1ED8A95B006EB1DA /* CoreLocation.framework */,
 				CC04F1C41DC27E6C00B4842D /* libsqlite3.tbd */,
 				CC944EC71DB161AE00C42269 /* libz.tbd */,
 				CC40D87B1D8C703E00BABD4F /* libOCMock.a */,
@@ -5022,13 +5018,13 @@
 					};
 					CC64F0531D8B77E3009CEF27 = {
 						CreatedOnToolsVersion = 8.0;
-						DevelopmentTeam = PGJV57GD94;
+						DevelopmentTeam = YQQCDVG64V;
 						LastSwiftMigration = 1000;
 						ProvisioningStyle = Automatic;
 					};
 					CC8999761D8B625500A0CECC = {
 						CreatedOnToolsVersion = 8.0;
-						DevelopmentTeam = PGJV57GD94;
+						DevelopmentTeam = YQQCDVG64V;
 						ProvisioningStyle = Automatic;
 					};
 					CC899CCF1D8B712D00A0CECC = {
@@ -6319,7 +6315,7 @@
 				CLANG_WARN_SUSPICIOUS_MOVES = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = PGJV57GD94;
+				DEVELOPMENT_TEAM = YQQCDVG64V;
 				ENABLE_TESTABILITY = YES;
 				INFOPLIST_FILE = AirshipKitTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
@@ -6344,7 +6340,7 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_SUSPICIOUS_MOVES = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = NO;
-				DEVELOPMENT_TEAM = PGJV57GD94;
+				DEVELOPMENT_TEAM = YQQCDVG64V;
 				INFOPLIST_FILE = AirshipKitTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				OTHER_LDFLAGS = (
@@ -6373,6 +6369,7 @@
 				COMBINE_HIDPI_IMAGES = NO;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = YQQCDVG64V;
 				ENABLE_BITCODE = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -6408,6 +6405,7 @@
 				COMBINE_HIDPI_IMAGES = NO;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = YQQCDVG64V;
 				ENABLE_BITCODE = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;

@@ -1,7 +1,6 @@
 /* Copyright Urban Airship and Contributors */
 
 #import <Foundation/Foundation.h>
-#import <CoreLocation/CoreLocation.h>
 #import "UAComponent.h"
 
 /**
@@ -68,11 +67,6 @@ NS_ASSUME_NONNULL_BEGIN
  * UALocationDelegate to receive location callbacks.
  */
 @property (nonatomic, weak, nullable) id <UALocationDelegate> delegate;
-
-/**
- * Returns the last received location. Can be nil if no location has been received.
- */
-@property (nonatomic, readonly, nullable) CLLocation *lastLocation;
 
 ///---------------------------------------------------------------------------------------
 /// @name Location Methods
