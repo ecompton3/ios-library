@@ -1,11 +1,10 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 #import "UATagGroupsRegistrar+Internal.h"
 #import "UATagGroupsMutation+Internal.h"
 
 @interface UATagGroupsRegistrarTest : UABaseTest
-@property (nonatomic, strong) UAPreferenceDataStore *dataStore;
 @property (nonatomic, strong) UATagGroupsMutationHistory *mutationHistory;
 @property (nonatomic, strong) UATagGroupsRegistrar *registrar;
 @property (nonatomic, strong) NSOperationQueue *operationQueue;
@@ -19,11 +18,7 @@
     [super setUp];
     
     self.mockApplication = [self mockForClass:[UIApplication class]];
-    [[[self.mockApplication stub] andReturn:self.mockApplication] sharedApplication];
-    
-    self.dataStore = [UAPreferenceDataStore preferenceDataStoreWithKeyPrefix:@"uataggroupsregistrar.test."];
-    [self.dataStore removeAll];
-    
+
     self.mockApiClient = [self mockForClass:[UATagGroupsAPIClient class]];
 
     self.operationQueue = [[NSOperationQueue alloc] init];
@@ -33,13 +28,13 @@
     self.registrar = [UATagGroupsRegistrar tagGroupsRegistrarWithDataStore:self.dataStore
                                                            mutationHistory:self.mutationHistory
                                                                  apiClient:self.mockApiClient
-                                                            operationQueue:self.operationQueue];
+                                                            operationQueue:self.operationQueue
+                                                               application:self.mockApplication];
 }
 
 - (void)tearDown {
     [self.operationQueue cancelAllOperations];
     [self.operationQueue waitUntilAllOperationsAreFinished];
-    [self.dataStore removeAll];
     [super tearDown];
 }
 
@@ -96,7 +91,7 @@
         [endBackgroundTaskExpecation fulfill];
     }] endBackgroundTask:0];
 
-    [self waitForExpectationsWithTimeout:5 handler:nil];
+    [self waitForTestExpectations];
     
     [self.mockApiClient verify];
 }

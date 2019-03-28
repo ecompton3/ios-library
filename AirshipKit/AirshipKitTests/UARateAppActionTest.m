@@ -1,25 +1,24 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 #import <StoreKit/StoreKit.h>
 #import "UAAction+Internal.h"
-#import "UAirship.h"
+#import "UAirship+Internal.h"
 #import "UAConfig.h"
-#import "UARateAppAction.h"
+#import "UARateAppAction+Internal.h"
 #import "UARateAppPromptViewController+Internal.h"
+#import "UATestSystemVersion.h"
+
 
 @interface UARateAppActionTest : UABaseTest
 
-@property (nonatomic, strong) id mockProcessInfo;
 @property (nonatomic, strong) id mockApplication;
 @property (nonatomic, strong) id mockStoreReviewController;
 @property (nonatomic, strong) id mockRateAppPromptViewControler;
 @property (nonatomic, strong) id mockAirship;
 @property (nonatomic, strong) id mockConfig;
 
-
-@property (assign) int testOSMajorVersion;
-@property (assign) int testOSMinorVersion;
+@property (nonatomic, strong) UATestSystemVersion *testSystemVersion;
 
 @property (nonatomic, retain) UARateAppAction *action;
 @end
@@ -29,12 +28,7 @@
 - (void)setUp {
     [super setUp];
 
-    // Set default OS major version to 10 by default
-    self.testOSMajorVersion = 10;
-    self.testOSMinorVersion = 3;
-
-    self.mockProcessInfo = [self mockForClass:[NSProcessInfo class]];
-    [[[self.mockProcessInfo stub] andReturn:self.mockProcessInfo] processInfo];
+    self.testSystemVersion = [[UATestSystemVersion alloc] init];
 
     self.mockRateAppPromptViewControler = [self mockForClass:[UARateAppPromptViewController class]];
     [[[self.mockRateAppPromptViewControler stub] andReturn:self.mockRateAppPromptViewControler] alloc];
@@ -45,31 +39,22 @@
     [[[self.mockConfig stub] andReturn:@"mockAppKey"] appKey];
 
     self.mockAirship = [self mockForClass:[UAirship class]];
-    [[[self.mockAirship stub] andReturn:self.mockAirship] shared];
+    [UAirship setSharedAirship:self.mockAirship];
     [[[self.mockAirship stub] andReturn:self.mockConfig] config];
 
     self.mockApplication = [self mockForClass:[UIApplication class]];
     [[[self.mockApplication stub] andReturn:self.mockApplication] sharedApplication];
-
-    [[[[self.mockProcessInfo stub] andDo:^(NSInvocation *invocation) {
-        NSOperatingSystemVersion arg;
-        [invocation getArgument:&arg atIndex:2];
-
-        BOOL result = self.testOSMajorVersion >= arg.majorVersion &&
-        self.testOSMinorVersion >= arg.minorVersion;
-        [invocation setReturnValue:&result];
-    }] ignoringNonObjectArgs] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){0, 0, 0}];
 
     [SKStoreReviewController requestReview];
 
     self.mockStoreReviewController = [self mockForClass:[SKStoreReviewController class]];
 
     self.action = [[UARateAppAction alloc] init];
+    self.action.systemVersion = self.testSystemVersion;
 }
 
 - (void)tearDown {
     [self.mockApplication stopMocking];
-    [self.mockProcessInfo stopMocking];
     [self.mockStoreReviewController stopMocking];
     [self.mockRateAppPromptViewControler stopMocking];
     [self.mockConfig stopMocking];
@@ -78,7 +63,42 @@
     [super tearDown];
 }
 
+// Tests removal of timestamps more than one year old
+- (void)testTimestampRemovalDataStore {
+    [[[self.mockConfig stub] andReturn:@"1195168544"] itunesID];
+
+    UAPreferenceDataStore *dataStore = [UAPreferenceDataStore preferenceDataStoreWithKeyPrefix:[UAirship shared].config.appKey];
+
+    // Remove all keys to avoid test pollution
+    [dataStore removeAll];
+
+    NSNumber *todayTimestamp = [NSNumber numberWithDouble:[[NSDate date] timeIntervalSince1970]];
+
+    // Inject time stamps of zero one and two to indicate three timestamps long ago
+    [[NSUserDefaults standardUserDefaults] setObject:@[@0, @1, @2] forKey:[@"mockAppKey" stringByAppendingString:@"RateAppActionPromptCount"]];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+
+    // Make sure there are stored timestamps
+    NSArray *timestamps = [dataStore arrayForKey:@"RateAppActionPromptCount"];
+    XCTAssertTrue([timestamps containsObject:@0] && [timestamps containsObject:@1] && [timestamps containsObject:@2]);
+
+    [self.action performWithArguments:[UAActionArguments argumentsWithValue:@{ UARateAppShowLinkPromptKey:@YES, UARateAppLinkPromptTitleKey :@"Acceptable Header", UARateAppLinkPromptBodyKey :@"Acceptable description."} withSituation:UASituationManualInvocation] completionHandler:^(UAActionResult * result) {
+    }];
+
+    // Check timestamps after call to ensure long ago timestamps are removed and today's timestamp is present
+    timestamps = [dataStore arrayForKey:@"RateAppActionPromptCount"];
+    XCTAssertFalse([timestamps containsObject:@0] || [timestamps containsObject:@1] || [timestamps containsObject:@2]);
+    NSNumber *storedTimestamp = timestamps[0];
+    XCTAssertTrue((storedTimestamp.doubleValue-todayTimestamp.doubleValue) < 5);
+
+    // Remove all keys to avoid test pollution
+    [dataStore removeAll];
+}
+
+
 -(void)testSystemRatingDialog {
+    self.testSystemVersion.currentSystemVersion = @"10.3.0";
+
     [[[self.mockConfig stub] andReturn:@"1195168544"] itunesID];
 
     [[self.mockStoreReviewController expect] requestReview];
@@ -92,8 +112,7 @@
 -(void)testRejectSystemRatingDialogLegacy {
     [[[self.mockConfig stub] andReturn:@"1195168544"] itunesID];
 
-    self.testOSMajorVersion = 10;
-    self.testOSMinorVersion = 0;
+    self.testSystemVersion.currentSystemVersion = @"10.0.0";
 
     [[self.mockStoreReviewController reject] requestReview];
 
@@ -136,8 +155,7 @@
 -(void)testlinkPromptLegacy {
     [[[self.mockConfig stub] andReturn:@"1195168544"] itunesID];
 
-    self.testOSMajorVersion = 10;
-    self.testOSMinorVersion = 0;
+    self.testSystemVersion.currentSystemVersion = @"10.0.0";
 
     NSString *acceptableHeader = @"Acceptable Header";
     NSString *acceptableDescription = @"Acceptable decsription.";
@@ -156,8 +174,7 @@
 
 
 -(void)testlinkPromptBadURLLegacy {
-    self.testOSMajorVersion = 10;
-    self.testOSMinorVersion = 0;
+    self.testSystemVersion.currentSystemVersion = @"10.0.0";
 
     NSString *acceptableHeader = @"Acceptable Header";
     NSString *acceptableDescription = @"Acceptable decsription.";
@@ -176,6 +193,8 @@
 
 // Tests acceptable arguments are accepted in iOS 10.3+
 - (void)testAcceptedArguments {
+    self.testSystemVersion.currentSystemVersion = @"10.3.0";
+
     [[[self.mockConfig stub] andReturn:@"1195168544"] itunesID];
 
     [self verifyAcceptsArgumentsWithValue:@{UARateAppShowLinkPromptKey:@YES} shouldAccept:YES];
@@ -205,8 +224,7 @@
 
 // Tests acceptable arguments are accepted for the legacy implementation < 10.3
 - (void)testAcceptedArgumentsLegacy {
-    self.testOSMajorVersion = 10;
-    self.testOSMinorVersion = 0;
+    self.testSystemVersion.currentSystemVersion = @"10.0.0";
 
     // Accept when itunes ID link prompt flag and itunes ID argument are set
     [self verifyAcceptsArgumentsWithValue:@{UARateAppShowLinkPromptKey:@YES, UARateAppItunesIDKey:@"1111111111"} shouldAccept:YES];
@@ -237,6 +255,7 @@
 
 // Tests that unacceptable arguments are rejected in iOS 10.3+
 - (void)testRejectedArguments {
+    self.testSystemVersion.currentSystemVersion = @"10.3.0";
 
     // Reject empty itunes ID arg
     [self verifyAcceptsArgumentsWithValue:@{UARateAppShowLinkPromptKey:@YES, UARateAppItunesIDKey:@""} shouldAccept:NO];
@@ -266,8 +285,7 @@
 
 // Tests that unacceptable arguments are rejected for the legacy implementation < 10.3
 - (void)testRejectedArgumentsLegacy {
-    self.testOSMajorVersion = 10;
-    self.testOSMinorVersion = 0;
+    self.testSystemVersion.currentSystemVersion = @"10.0.0";
 
     // Reject empty itunes ID arg
     [self verifyAcceptsArgumentsWithValue:@{UARateAppShowLinkPromptKey:@YES, UARateAppItunesIDKey:@""} shouldAccept:NO];

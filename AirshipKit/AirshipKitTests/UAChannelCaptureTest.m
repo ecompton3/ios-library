@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 #import "UAConfig.h"
@@ -9,9 +9,7 @@
 
 
 @interface UAChannelCaptureTest : UABaseTest
-@property(nonatomic, strong) UAConfig *config;
 @property(nonatomic, strong) UAChannelCapture *channelCapture;
-@property(nonatomic, strong) UAPreferenceDataStore *dataStore;
 @property(nonatomic, strong) NSNotificationCenter *notificationCenter;
 
 @property(nonatomic, strong) id mockPush;
@@ -32,7 +30,6 @@
     self.mockPasteboard = [self mockForClass:[UIPasteboard class]];
     [[[self.mockPasteboard stub] andReturn:self.mockPasteboard] generalPasteboard];
 
-
     self.mockRootViewController = [self mockForClass:[UIViewController class]];
     self.mockWindow = [self mockForClass:[UIWindow class]];
     [[[self.mockWindow stub] andReturn:self.mockRootViewController] rootViewController];
@@ -40,13 +37,6 @@
     self.mockApplication = [self mockForClass:[UIApplication class]];
     [[[self.mockApplication stub] andReturn:self.mockApplication] sharedApplication];
     [[[self.mockApplication stub] andReturn:@[self.mockWindow]] windows];
-
-    self.config = [UAConfig config];
-    self.config.developmentAppKey = @"App key";
-    self.config.developmentAppSecret = @"App secret";
-    self.config.inProduction = NO;
-
-    self.dataStore = [UAPreferenceDataStore preferenceDataStoreWithKeyPrefix:@"test.channelCapture"];
 
     self.notificationCenter = [[NSNotificationCenter alloc] init];
 
@@ -188,7 +178,7 @@
 
 
     // Wait for the test expectations
-    [self waitForExpectationsWithTimeout:1 handler:nil];
+    [self waitForTestExpectations];
     [self.mockRootViewController verify];
 }
 

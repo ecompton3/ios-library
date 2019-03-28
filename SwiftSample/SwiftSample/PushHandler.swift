@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 import UIKit
 import AVFoundation
@@ -17,13 +17,6 @@ class PushHandler: NSObject, UAPushNotificationDelegate {
     func receivedForegroundNotification(_ notificationContent: UANotificationContent, completionHandler: @escaping () -> Swift.Void) {
         // Application received a foreground notification
         print("The application received a foreground notification");
-
-        // iOS 10 - let foreground presentations options handle it
-        if (ProcessInfo().isOperatingSystemAtLeast(OperatingSystemVersion(majorVersion: 10, minorVersion: 0, patchVersion: 0))) {
-            completionHandler()
-            return
-        }
-
         completionHandler()
     }
 
@@ -35,11 +28,10 @@ class PushHandler: NSObject, UAPushNotificationDelegate {
         NSLog("Action Identifier:   \(notificationResponse.actionIdentifier)")
         NSLog("Category Identifier: \(notificationContent.categoryIdentifier ?? "nil")")
         NSLog("Response Text:       \(notificationResponse.responseText)")
-        
+
         completionHandler()
     }
 
-    @available(iOS 10.0, tvOS 10.0, *)
     func presentationOptions(for notification: UNNotification) -> UNNotificationPresentationOptions {
         return [.alert, .sound]
     }

@@ -1,13 +1,26 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import <XCTest/XCTest.h>
 #import <OCMock/OCMock.h>
 #import "UADisposable.h"
+#import "UAPreferenceDataStore+Internal.h"
+#import "UAConfig.h"
 
 extern const NSTimeInterval UATestExpectationTimeOut;
 
 @interface UABaseTest : XCTestCase
 
+/**
+ * A preference data store unique to this test. The dataStore is created
+ * lazily when first used.
+ */
+@property (nonatomic, strong) UAPreferenceDataStore *dataStore;
+
+/**
+ * A preference airship with unique appkey/secret. The config is created
+ * lazily when first used.
+ */
+@property (nonatomic, strong) UAConfig *config;
 
 /**
  * Creates a nice mock for a given class.
@@ -47,5 +60,6 @@ extern const NSTimeInterval UATestExpectationTimeOut;
  * Waits for all test expectations with the default timeout.
  */
 - (void)waitForTestExpectations;
+
 
 @end

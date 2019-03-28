@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 
@@ -13,49 +13,45 @@
 
 @property (nonatomic, strong) UAInboxAPIClient *inboxAPIClient;
 @property (nonatomic, strong) id mockUser;
-@property (nonatomic, strong) id mockConfig;
-@property (nonatomic, strong) id mockDataStore;
 @property (nonatomic, strong) id mockAirship;
 @property (nonatomic, strong) id mockPush;
 @property (nonatomic, strong) id mockSession;
-
-@property (nonatomic, strong) UAConfig *config;
-
 @end
 
 @implementation UAInboxAPIClientTest
 
 - (void)setUp {
     [super setUp];
-
-    self.config = [UAConfig config];
-
-    self.mockDataStore = [self mockForClass:[UAPreferenceDataStore class]];
-
     self.mockPush = [self mockForClass:[UAPush class]];
     [[[self.mockPush stub] andReturn:@"mockChannelID"] channelID];
 
     self.mockSession = [self mockForClass:[UARequestSession class]];
 
     self.mockAirship = [self mockForClass:[UAirship class]];
-    [[[self.mockAirship stub] andReturn:self.mockAirship] shared];
+    [UAirship setSharedAirship:self.mockAirship];
     [[[self.mockAirship stub] andReturn:self.mockPush] push];
 
     self.mockUser = [self mockForClass:[UAUser class]];
-    [[[self.mockUser stub] andReturn:@"userName"] username];
-    [[[self.mockUser stub] andReturn:@"userPassword"] password];
 
-    self.inboxAPIClient = [UAInboxAPIClient clientWithConfig:self.mockConfig
+    UAUserData *userData = [UAUserData dataWithUsername:@"username" password:@"password" url:@"url"];
+
+    [[[self.mockUser stub] andDo:^(NSInvocation *invocation) {
+        void *arg;
+        [invocation getArgument:&arg atIndex:2];
+        void (^completionHandler)(UAUserData * _Nullable) = (__bridge void (^)(UAUserData * _Nullable)) arg;
+        completionHandler(userData);
+    }] getUserData:OCMOCK_ANY];
+
+    self.inboxAPIClient = [UAInboxAPIClient clientWithConfig:self.config
                                                      session:self.mockSession
                                                         user:self.mockUser
-                                                   dataStore:self.mockDataStore];
+                                                   dataStore:self.dataStore];
 }
 
 - (void)tearDown {
     [self.mockAirship stopMocking];
     [self.mockPush stopMocking];
     [self.mockUser stopMocking];
-    [self.mockDataStore stopMocking];
     [self.mockSession stopMocking];
 
     [super tearDown];
@@ -343,7 +339,7 @@
     }];
     
     // verify
-    [self waitForExpectationsWithTimeout:1 handler:nil];
+    [self waitForTestExpectations];
     [self.mockSession verify];
 }
 
@@ -364,7 +360,7 @@
     }];
     
     // verify
-    [self waitForExpectationsWithTimeout:1 handler:nil];
+    [self waitForTestExpectations];
     [self.mockSession verify];
 }
 
@@ -386,7 +382,7 @@
     }];
     
     // verify
-    [self waitForExpectationsWithTimeout:1 handler:nil];
+    [self waitForTestExpectations];
     [self.mockSession verify];
 }
 

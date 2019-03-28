@@ -1,7 +1,8 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 import UIKit
 import AirshipKit
+import AirshipDebugKit
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate, UARegistrationDelegate, UADeepLinkDelegate {
@@ -9,13 +10,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UARegistrationDelegate, U
     let simulatorWarningDisabledKey = "ua-simulator-warning-disabled"
     let pushHandler = PushHandler()
 
-    let HomeStoryboardID = "home";
-    let PushSettingsStoryboardID = "push_settings";
-    let MessageCenterStoryboardID = "message_center";
+    let HomeStoryboardID = "home"
+    let PushSettingsStoryboardID = "push_settings"
+    let MessageCenterStoryboardID = "message_center"
+    let DebugStoryboardID = "debug"
+    let InAppAutomationStoryboardID = "in_app_automation"
 
     let HomeTab = 0;
-    let PushSettingsTab = 1;
-    let MessageCenterTab = 2;
+    let MessageCenterTab = 1;
+    let DebugTab = 2;
 
     var window: UIWindow?
     var inboxDelegate: InboxDelegate?
@@ -44,6 +47,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UARegistrationDelegate, U
 
         // Call takeOff (which creates the UAirship singleton)
         UAirship.takeOff(config)
+
+        AirshipDebugKit.takeOff()
 
         // Print out the application configuration for debugging (optional)
         print("Config:\n \(config)")
@@ -119,8 +124,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UARegistrationDelegate, U
     @objc func refreshMessageCenterBadge() {
         DispatchQueue.main.async {
             if self.window?.rootViewController is UITabBarController {
-                let messageCenterTab: UITabBarItem = (self.window!.rootViewController! as! UITabBarController).tabBar.items![2]
-                
+                let messageCenterTab: UITabBarItem = (self.window!.rootViewController! as! UITabBarController).tabBar.items![self.MessageCenterTab]
+
                 if (UAirship.inbox().messageList.unreadCount > 0) {
                     messageCenterTab.badgeValue = String(stringInterpolationSegment:UAirship.inbox().messageList.unreadCount)
                 } else {
@@ -146,12 +151,42 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UARegistrationDelegate, U
             tabController.selectedIndex = HomeTab
         } else if pathComponents.contains(PushSettingsStoryboardID) {
             if let nav = tabController.selectedViewController as? UINavigationController {
-                if !nav.topViewController!.isKind(of: PushSettingsViewController.self) {
+                if !nav.topViewController!.isKind(of: DebugViewController.self) {
                     nav.popToRootViewController(animated: true);
                 }
             }
 
-            tabController.selectedIndex = PushSettingsTab;
+            tabController.selectedIndex = DebugTab;
+            
+            if let nav = tabController.selectedViewController as? UINavigationController {
+                if nav.topViewController!.isKind(of: DebugViewController.self) {
+                    let debugViewController = nav.topViewController as! DebugViewController
+                    debugViewController.deviceInfo()
+                }
+            }
+        } else if pathComponents.contains(DebugStoryboardID) {
+            if let nav = tabController.selectedViewController as? UINavigationController {
+                if !nav.topViewController!.isKind(of: DebugViewController.self) {
+                    nav.popToRootViewController(animated: true);
+                }
+            }
+            
+            tabController.selectedIndex = DebugTab;
+        } else if pathComponents.contains(InAppAutomationStoryboardID) {
+            if let nav = tabController.selectedViewController as? UINavigationController {
+                if !nav.topViewController!.isKind(of: DebugViewController.self) {
+                    nav.popToRootViewController(animated: true);
+                }
+            }
+            
+            tabController.selectedIndex = DebugTab;
+            
+            if let nav = tabController.selectedViewController as? UINavigationController {
+                if nav.topViewController!.isKind(of: DebugViewController.self) {
+                    let debugViewController = nav.topViewController as! DebugViewController
+                    debugViewController.inAppAutomation()
+                }
+            }
         } else if pathComponents.contains(MessageCenterStoryboardID) {
             tabController.selectedIndex = MessageCenterTab;
         }

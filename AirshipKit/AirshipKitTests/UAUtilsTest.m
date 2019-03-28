@@ -1,12 +1,13 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UAUtils+Internal.h"
-#import "UAUtilsTest.h"
 #import "UAUser+Internal.h"
 #import "UAirship+Internal.h"
+#import "UABaseTest.h"
 
-@interface UAUtilsTest ()
+@interface UAUtilsTest : UABaseTest
 @property(nonatomic, strong) NSCalendar *gregorianUTC;
+@property(nonatomic, strong) id mockAirship;
 @end
 
 @implementation UAUtilsTest
@@ -17,11 +18,11 @@
                              initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
 
     self.gregorianUTC.timeZone = [NSTimeZone timeZoneForSecondsFromGMT:0];
+
+    self.mockAirship = [self mockForClass:[UAirship class]];
+    [UAirship setSharedAirship:self.mockAirship];
 }
 
-- (void)tearDown {
-    [super tearDown];
-}
 
 - (void)testConnectionType {
     // SETUP
@@ -63,16 +64,20 @@
 }
 
 - (void)testUserAuthHeaderString {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     XCTAssertEqualObjects([UAUtils userAuthHeaderString],@"Basic KG51bGwpOihudWxsKQ==");
-    
+#pragma GCC diagnostic pop
     id mockUser = [self mockForClass:[UAUser class]];
     [[[mockUser stub] andReturn:@"someUser"] username];
     [[[mockUser stub] andReturn:@"somePassword"] password];
-    
-    id mockAirship = [self mockForClass:[UAirship class]];
-    [[[mockAirship stub] andReturn:mockUser] inboxUser];
 
+    [[[self.mockAirship stub] andReturn:mockUser] inboxUser];
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     XCTAssertEqualObjects([UAUtils userAuthHeaderString],@"Basic c29tZVVzZXI6c29tZVBhc3N3b3Jk");
+#pragma GCC diagnostic pop
 }
 
 - (void)testAppAuthHeaderString {
@@ -82,9 +87,7 @@
     [[[mockUAConfig stub] andReturn:@"someAppKey"] appKey];
     [[[mockUAConfig stub] andReturn:@"someAppSecret"] appSecret];
 
-    id mockAirship = [self mockForClass:[UAirship class]];
-    [[[mockAirship stub] andReturn:mockAirship] shared];
-    [[[mockAirship stub] andReturn:mockUAConfig] config];
+    [[[self.mockAirship stub] andReturn:mockUAConfig] config];
     
     XCTAssertEqualObjects([UAUtils appAuthHeaderString],@"Basic c29tZUFwcEtleTpzb21lQXBwU2VjcmV0");
 }
@@ -455,6 +458,35 @@
     fetchResults[1] = [NSNumber numberWithInt:UIBackgroundFetchResultNoData];
     fetchResults[2] = [NSNumber numberWithInt:UIBackgroundFetchResultFailed];
     XCTAssertEqual([UAUtils mergeFetchResults:fetchResults], UIBackgroundFetchResultNewData);
+}
+
+- (void)testFloatingPointIsEqualsWithAccuracy {
+    // Positive numbers
+    XCTAssertTrue([UAUtils float:10 isEqualToFloat:10.1 withAccuracy:0.1]);
+    XCTAssertTrue([UAUtils float:10 isEqualToFloat:10.0 withAccuracy:0]);
+    XCTAssertTrue([UAUtils float:10 isEqualToFloat:9.9 withAccuracy:0.1]);
+
+    XCTAssertFalse([UAUtils float:10 isEqualToFloat:10.1 withAccuracy:0]);
+    XCTAssertFalse([UAUtils float:10 isEqualToFloat:10.1 withAccuracy:0.01]);
+    
+    // Around zero
+    XCTAssertTrue([UAUtils float:0 isEqualToFloat:0.1 withAccuracy:0.1]);
+    XCTAssertTrue([UAUtils float:0 isEqualToFloat:-0.1 withAccuracy:0.1]);
+
+    XCTAssertFalse([UAUtils float:0 isEqualToFloat:0.1 withAccuracy:0.099]);
+    XCTAssertFalse([UAUtils float:0 isEqualToFloat:-0.1 withAccuracy:0.099]);
+    
+    // Negative numbers
+    XCTAssertTrue([UAUtils float:-10 isEqualToFloat:-10.1 withAccuracy:0.1]);
+    XCTAssertTrue([UAUtils float:-10 isEqualToFloat:-10.0 withAccuracy:0]);
+    XCTAssertTrue([UAUtils float:-10 isEqualToFloat:-9.9 withAccuracy:0.1]);
+    
+    XCTAssertFalse([UAUtils float:-10 isEqualToFloat:-10.1 withAccuracy:0]);
+    XCTAssertFalse([UAUtils float:-10 isEqualToFloat:-10.1 withAccuracy:0.01]);
+    
+    // Large numbers
+    XCTAssertTrue([UAUtils float:1000000 isEqualToFloat:1000001 withAccuracy:1]);
+    XCTAssertTrue([UAUtils float:1000000 isEqualToFloat:999999 withAccuracy:1]);
 }
 
 @end

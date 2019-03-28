@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import <UIKit/UIKit.h>
 
@@ -10,10 +10,6 @@
 #import "UALocation.h"
 #import "NSJSONSerialization+UAAdditions.h"
 #import "UAJSONSerialization+Internal.h"
-
-#if !TARGET_OS_TV
-#import "UAInbox.h"
-#endif
 
 @implementation UAEventAPIClient
 
@@ -75,10 +71,6 @@
         [builder setValue:[[NSLocale autoupdatingCurrentLocale] objectForKey: NSLocaleVariantCode] forHeader:@"X-UA-Locale-Variant"];
 
         // Urban Airship identifiers
-        [builder setValue:[UAUtils deviceID] forHeader:@"X-UA-ID"];
-#if !TARGET_OS_TV   // Inbox not supported on tvOS
-        [builder setValue:[UAirship inboxUser].username forHeader:@"X-UA-User-ID"];
-#endif
         [builder setValue:[UAirship push].channelID forHeader:@"X-UA-Channel-ID"];
         [builder setValue:self.config.appKey forHeader:@"X-UA-App-Key"];
 
@@ -96,15 +88,12 @@
         [builder setValue:[[UAirship push] backgroundPushNotificationsAllowed] ? @"true" : @"false" forHeader:@"X-UA-Channel-Background-Enabled"];
 
         // Location settings
-        [builder setValue:[self locationPermission] forHeader:@"X-UA-Location-Permission"];
-        [builder setValue:[UAirship location].locationUpdatesEnabled ? @"true" : @"false" forHeader:@"X-UA-Location-Service-Enabled"];
+        // Location settings
+        [builder setValue:UAirship.location.locationPermissionDescription forHeader:@"X-UA-Location-Permission"];
+        [builder setValue:UAirship.location.locationUpdatesEnabled ? @"true" : @"false" forHeader:@"X-UA-Location-Service-Enabled"];
     }];
     
     return request;
-}
-
-- (NSString *)locationPermission {
-        return @"SYSTEM_LOCATION_DISABLED";
 }
 
 @end

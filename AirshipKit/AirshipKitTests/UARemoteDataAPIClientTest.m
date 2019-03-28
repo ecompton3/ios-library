@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import <XCTest/XCTest.h>
 #import <OCMock/OCMock.h>
@@ -11,15 +11,11 @@
 #import "UARemoteDataPayload+Internal.h"
 #import "UAirshipVersion.h"
 
-
 @interface UARemoteDataAPIClientTest : UABaseTest
-
 @property (nonatomic, strong) UARemoteDataAPIClient *remoteDataAPIClient;
-@property (nonatomic, strong) UAConfig *config;
-
 @property (nonatomic, strong) id mockSession;
-@property (nonatomic, strong) id mockSessionClass;
-@property (nonatomic, strong) id mockDataStore;
+@property (nonatomic, strong) id mockLocaleClass;
+
 
 @end
 
@@ -27,25 +23,14 @@
 
 - (void)setUp {
     [super setUp];
+    self.mockSession = [self mockForClass:[UARequestSession class]];
+    self.remoteDataAPIClient = [UARemoteDataAPIClient clientWithConfig:self.config
+                                                             dataStore:self.dataStore
+                                                               session:self.mockSession];
 
-    self.config = [UAConfig config];
-    self.config.developmentAppKey = @"appKey";
-    self.config.inProduction = NO;
 
-    self.mockSession = [OCMockObject niceMockForClass:[UARequestSession class]];
-    self.mockDataStore = [OCMockObject niceMockForClass:[UAPreferenceDataStore class]];
-    self.mockSessionClass = OCMClassMock([UARequestSession class]);
-    [[[self.mockSessionClass stub] andReturn:self.mockSession] sessionWithConfig:OCMOCK_ANY];
+    self.mockLocaleClass = [self strictMockForClass:[NSLocale class]];
 
-    self.remoteDataAPIClient = [UARemoteDataAPIClient clientWithConfig:self.config dataStore:self.mockDataStore];
-
-}
-
-- (void)tearDown {
-    [self.mockDataStore stopMocking];
-    [self.mockSession stopMocking];
-
-    [super tearDown];
 }
 
 /**
@@ -53,15 +38,17 @@
  */
 - (void)testRefreshRemoteData {
 
+    self.config.developmentAppKey = @"appKey";
+
     // Create a successful response
     NSDictionary *remoteDataDict = @{ @"type": @"test_data_type",
                                       @"timestamp":@"2017-01-01T12:00:00",
                                       @"data": @{ @"message_center" :
                                                       @{ @"background_color" : @"0000FF",
                                                          @"font" : @"Comic Sans"
-                                                        }
+                                                         }
                                                   }
-                                        };
+                                      };
     NSData *responseData = [self createRemoteDataFromDictionaries:@[remoteDataDict]];
     NSString *expectedLastModifiedTimestamp = remoteDataDict[@"timestamp"];
     NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:[NSURL URLWithString:@""] statusCode:200 HTTPVersion:nil headerFields:@{@"Last-Modified":expectedLastModifiedTimestamp}];
@@ -74,7 +61,7 @@
         completionHandler(responseData, (NSURLResponse *)response, nil);
     }] dataTaskWithRequest:[OCMArg checkWithBlock:^BOOL(id obj) {
         UARequest *request = obj;
-        NSString *expected = [NSString stringWithFormat:@"https://remote-data.urbanairship.com/api/remote-data/app/appKey/ios?sdk_version=%@", [UAirshipVersion get]];
+        NSString *expected = [NSString stringWithFormat:@"https://remote-data.urbanairship.com/api/remote-data/app/appKey/ios?sdk_version=%@&language=%@&country=%@", [UAirshipVersion get],[NSLocale currentLocale].languageCode, [NSLocale currentLocale].countryCode];
 
         return [[request.URL absoluteString] isEqualToString:expected];
     }] retryWhere:OCMOCK_ANY completionHandler:OCMOCK_ANY];
@@ -94,9 +81,8 @@
     }];
 
     // Wait for the test expectations
-    [self waitForExpectationsWithTimeout:1 handler:^(NSError *error) {
-        [self.mockSession verify];
-    }];
+    [self waitForTestExpectations];
+    [self.mockSession verify];
 }
 
 /**
@@ -117,27 +103,26 @@
     NSString *expectedLastModifiedTimestamp = remoteDataDict[@"timestamp"];
     NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:[NSURL URLWithString:@""] statusCode:200 HTTPVersion:nil headerFields:@{@"Last-Modified":expectedLastModifiedTimestamp}];
 
+
+    __block UARequestCompletionHandler completionHandler;
+
     // Stub the session to return the response
     [[[self.mockSession stub] andDo:^(NSInvocation *invocation) {
         void *arg;
         [invocation getArgument:&arg atIndex:4];
-        UARequestCompletionHandler completionHandler = (__bridge UARequestCompletionHandler)arg;
-
-        // delay call back a bit to simulate actually going to the cloud
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completionHandler(responseData, (NSURLResponse *)response, nil);
-        });
+        completionHandler= (__bridge UARequestCompletionHandler)arg;
     }] dataTaskWithRequest:OCMOCK_ANY retryWhere:OCMOCK_ANY completionHandler:OCMOCK_ANY];
 
     // Make call
     UADisposable *disposable = [self.remoteDataAPIClient fetchRemoteData:^(NSUInteger statusCode, NSArray<NSDictionary *> *remoteData) {
-        UA_LDEBUG(@"Callback");
         XCTFail(@"Should not call callbacks");
     } onFailure:^() {
         XCTFail(@"Should not call callbacks");
     }];
 
     [disposable dispose];
+
+    completionHandler(responseData, (NSURLResponse *)response, nil);
 
 }
 
@@ -150,19 +135,19 @@
     NSDictionary *remoteDataDict1 = @{ @"type": @"test_data_type",
                                        @"timestamp":@"2017-01-01T12:00:00",
                                        @"data": @{ @"message_center" :
-                                                      @{ @"background_color" : @"0000FF",
-                                                         @"font" : @"Comic Sans"
-                                                         }
-                                                  }
-                                      };
+                                                       @{ @"background_color" : @"0000FF",
+                                                          @"font" : @"Comic Sans"
+                                                          }
+                                                   }
+                                       };
     NSDictionary *remoteDataDict2 = @{ @"type": @"test_data_type_2",
                                        @"timestamp":@"2017-01-01T13:00:00",
                                        @"data": @{ @"test-stuff" :
-                                                      @{ @"background_color" : @"00FF00",
-                                                         @"font" : @"Courier"
-                                                         }
-                                                  }
-                                      };
+                                                       @{ @"background_color" : @"00FF00",
+                                                          @"font" : @"Courier"
+                                                          }
+                                                   }
+                                       };
     NSArray *remoteDataDicts = [NSArray arrayWithObjects:remoteDataDict2,remoteDataDict1, nil];
     NSData *responseData = [self createRemoteDataFromDictionaries:remoteDataDicts];
     NSString *expectedLastModifiedTimestamp = [remoteDataDicts valueForKeyPath:@"@max.timestamp"];
@@ -195,17 +180,15 @@
         XCTAssertEqualObjects(testDict1[@"data"], remoteDataDict1[@"data"], @"Remote data should match");
         XCTAssertTrue([testDict2[@"type"] isEqualToString:remoteDataDict2[@"type"]]);
         XCTAssertEqualObjects(testDict2[@"data"], remoteDataDict2[@"data"], @"Remote data should match");
-       [refreshFinished fulfill];
+        [refreshFinished fulfill];
     } onFailure:^() {
         XCTFail(@"Should not fail");
         [refreshFinished fulfill];
     }];
 
     // Wait for the test expectations
-    [self waitForExpectationsWithTimeout:1 handler:^(NSError *error) {
-        [self.mockSession verify];
-    }];
-
+    [self waitForTestExpectations];
+    [self.mockSession verify];
 }
 
 /**
@@ -215,13 +198,13 @@
 
     // Create a successful response (but not modified)
     NSDictionary *remoteDataDict = @{ @"type": @"test_data_type",
-                                       @"timestamp":@"2017-01-01T12:00:00",
-                                       @"data": @{ @"message_center" :
-                                                       @{ @"background_color" : @"0000FF",
-                                                          @"font" : @"Comic Sans"
-                                                          }
-                                                   }
-                                       };
+                                      @"timestamp":@"2017-01-01T12:00:00",
+                                      @"data": @{ @"message_center" :
+                                                      @{ @"background_color" : @"0000FF",
+                                                         @"font" : @"Comic Sans"
+                                                         }
+                                                  }
+                                      };
     NSData *responseData = [self createRemoteDataFromDictionaries:@[remoteDataDict]];
     NSString *expectedLastModifiedTimestamp = remoteDataDict[@"timestamp"];
     NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:[NSURL URLWithString:@""] statusCode:304 HTTPVersion:nil headerFields:@{@"Last-Modified":expectedLastModifiedTimestamp}];
@@ -248,10 +231,8 @@
     }];
 
     // Wait for the test expectations
-    [self waitForExpectationsWithTimeout:1 handler:^(NSError *error) {
-        [self.mockSession verify];
-    }];
-
+    [self waitForTestExpectations];
+    [self.mockSession verify];
 }
 
 /**
@@ -261,10 +242,10 @@
 
     // Create a successful response
     NSDictionary *remoteDataDict = @{ @"message_center" :
-                                            @{ @"background_color" : @"0000FF",
-                                               @"font" : @"Comic Sans"
-                                               }
-                                        };
+                                          @{ @"background_color" : @"0000FF",
+                                             @"font" : @"Comic Sans"
+                                             }
+                                      };
     NSData *responseData = [self createRemoteDataFromDictionary:remoteDataDict ofType:@"test_data_type"];
     NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:[NSURL URLWithString:@""] statusCode:504 HTTPVersion:nil headerFields:@{}];
 
@@ -287,10 +268,8 @@
     }];
 
     // Wait for the test expectations
-    [self waitForExpectationsWithTimeout:1 handler:^(NSError *error) {
-        [self.mockSession verify];
-    }];
-
+    [self waitForTestExpectations];
+    [self.mockSession verify];
 }
 
 /**
@@ -326,10 +305,102 @@
     }];
 
     // Wait for the test expectations
-    [self waitForExpectationsWithTimeout:1 handler:^(NSError *error) {
-        [self.mockSession verify];
-    }];
+    [self waitForTestExpectations];
+    [self.mockSession verify];
 }
+
+- (void)testVersion {
+    NSString *expectedVersionQueryComponent = [NSString stringWithFormat:@"sdk_version=%@", [UAirshipVersion get]];
+    int expectedVersionIndex = 0;
+
+    // Make call
+    [self.remoteDataAPIClient fetchRemoteData:^(NSUInteger statusCode, NSArray<NSDictionary *> *remoteData) {
+    } onFailure:^() {
+    }];
+
+    [[self.mockSession verify] dataTaskWithRequest:[OCMArg checkWithBlock:^BOOL(id obj) {
+        UARequest *request = obj;
+
+        XCTAssertTrue([request.URL.query containsString:@"sdk_version="]);
+        XCTAssertEqualObjects(expectedVersionQueryComponent, [[request.URL query] componentsSeparatedByString:@"&"][expectedVersionIndex]);
+
+        return true;
+    }] retryWhere:OCMOCK_ANY completionHandler:OCMOCK_ANY];
+}
+
+- (void)testLanguage {
+    NSString *expectedLanguageQueryComponent = [NSString stringWithFormat:@"language=en"];
+    int expectedLanguageIndex = 1;
+    NSString *expectedLocale = @"en-01";
+
+    NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:expectedLocale];
+    [[[self.mockLocaleClass stub] andReturn:locale] currentLocale];
+
+    // Make call
+    [self.remoteDataAPIClient fetchRemoteData:^(NSUInteger statusCode, NSArray<NSDictionary *> *remoteData) {
+    } onFailure:^() {
+    }];
+
+    [[self.mockSession verify] dataTaskWithRequest:[OCMArg checkWithBlock:^BOOL(id obj) {
+        UARequest *request = obj;
+
+        XCTAssertTrue([request.URL.query containsString:@"language="]);
+        XCTAssertEqualObjects(expectedLanguageQueryComponent, [[request.URL query] componentsSeparatedByString:@"&"][expectedLanguageIndex]);
+
+
+        return true;
+    }] retryWhere:OCMOCK_ANY completionHandler:OCMOCK_ANY];
+}
+
+- (void)testCountry {
+    NSString *expectedLocale = @"en-01";
+    NSString *expectedCountryQueryComponent = [NSString stringWithFormat:@"country=01"];
+    int expectedContryIndex = 2;
+
+    NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:expectedLocale];
+    [[[self.mockLocaleClass stub] andReturn:locale] currentLocale];
+
+    // Make call
+    [self.remoteDataAPIClient fetchRemoteData:^(NSUInteger statusCode, NSArray<NSDictionary *> *remoteData) {
+    } onFailure:^() {
+    }];
+
+    [[self.mockSession verify] dataTaskWithRequest:[OCMArg checkWithBlock:^BOOL(id obj) {
+        UARequest *request = obj;
+
+        XCTAssertTrue([request.URL.query containsString:@"country="]);
+        XCTAssertEqualObjects(expectedCountryQueryComponent, [[request.URL query] componentsSeparatedByString:@"&"][expectedContryIndex]);
+
+        return true;
+    }] retryWhere:OCMOCK_ANY completionHandler:OCMOCK_ANY];
+}
+
+- (void)testLocaleMissingCountry {
+    NSString *expectedLocale = @"en";
+    NSString *expectedLocaleQueryComponent = [NSString stringWithFormat:@"language=en"];
+
+    int expectedLanguageIndex = 1;
+
+    NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:expectedLocale];
+    [[[self.mockLocaleClass stub] andReturn:locale] currentLocale];
+
+    // Make call
+    [self.remoteDataAPIClient fetchRemoteData:^(NSUInteger statusCode, NSArray<NSDictionary *> *remoteData) {
+    } onFailure:^() {
+    }];
+
+    [[self.mockSession verify] dataTaskWithRequest:[OCMArg checkWithBlock:^BOOL(id obj) {
+        UARequest *request = obj;
+
+        NSArray *queryComponents = [request.URL.query componentsSeparatedByString:@"&"];
+        XCTAssertEqualObjects(expectedLocaleQueryComponent, queryComponents[expectedLanguageIndex]);
+        XCTAssertTrue([request.URL.query containsString:@"language="]);
+        XCTAssertFalse([request.URL.query containsString:@"country="]);
+
+        return true;
+    }] retryWhere:OCMOCK_ANY completionHandler:OCMOCK_ANY];
+}
+
 
 - (NSData *)createRemoteDataFromDictionary:(NSDictionary *)remoteDataDict ofType:(NSString *)type {
     NSDictionary *responseDict;
@@ -360,15 +431,15 @@
     NSMutableArray *payloads = [NSMutableArray array];
     for (NSDictionary *remoteDataDict in remoteDataDicts) {
         [payloads addObject:@{ @"type" : remoteDataDict[@"type"],
-                     @"timestamp" : remoteDataDict[@"timestamp"],
-                     @"data" : remoteDataDict[@"data"]
-                     }
+                               @"timestamp" : remoteDataDict[@"timestamp"],
+                               @"data" : remoteDataDict[@"data"]
+                               }
          ];
     }
 
     NSDictionary *responseDict = @{ @"ok" : @YES,
                                     @"payloads" : payloads
-                                  };
+                                    };
 
     NSError *error;
     NSData *remoteData = [NSJSONSerialization dataWithJSONObject:responseDict options:NSJSONWritingPrettyPrinted error:&error];

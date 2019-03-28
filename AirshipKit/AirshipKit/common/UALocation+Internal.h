@@ -1,7 +1,8 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UALocation.h"
 #import "UAComponent+Internal.h"
+#import "UASystemVersion+Internal.h"
 
 @class UAPreferenceDataStore;
 @class UAAnalytics;
@@ -22,6 +23,11 @@ NS_ASSUME_NONNULL_BEGIN
  * The data store.
  */
 @property (nonatomic, strong) UAPreferenceDataStore *dataStore;
+
+/**
+ * The system version.
+ */
+@property (nonatomic, strong) UASystemVersion *systemVersion;
 
 /**
  * The Urban Airship analytics.

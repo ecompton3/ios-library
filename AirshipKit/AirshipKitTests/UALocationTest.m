@@ -1,10 +1,12 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 #import "UALocation+Internal.h"
 #import "UAPreferenceDataStore+Internal.h"
 #import "UAAnalytics.h"
 #import "UALocationEvent.h"
+#import "UATestSystemVersion.h"
+
 
 @interface UALocationTest : UABaseTest
 
@@ -15,7 +17,6 @@
 @property (nonatomic, strong) id mockLocationManager;
 @property (nonatomic, strong) id mockedApplication;
 @property (nonatomic, strong) id mockedBundle;
-@property (nonatomic, strong) id mockProcessInfo;
-@property (nonatomic, assign) NSUInteger testOSMajorVersion;
+@property (nonatomic, strong) UATestSystemVersion *testSystemVersion;
 
 @end

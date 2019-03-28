@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 #import "UAComponent+Internal.h"
@@ -19,7 +19,6 @@
 @end
 
 @interface UAComponentTests : UABaseTest
-@property (nonatomic, strong) UAPreferenceDataStore *dataStore;
 @property (nonatomic, strong) UATestComponent *component;
 @end
 
@@ -28,15 +27,7 @@
 - (void)setUp {
     [super setUp];
 
-    self.dataStore = [UAPreferenceDataStore preferenceDataStoreWithKeyPrefix:@"uacomponent.test."];
-    [self.dataStore removeAll];
-
     self.component = [[UATestComponent alloc] initWithDataStore:self.dataStore];
-}
-
-- (void)tearDown {
-    [self.dataStore removeAll];
-    [super tearDown];
 }
 
 - (void)testDefaultEnabled {

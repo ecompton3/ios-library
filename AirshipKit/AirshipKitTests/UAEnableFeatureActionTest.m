@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 
@@ -17,7 +17,6 @@
 @property(nonatomic, strong) id mockPush;
 @property(nonatomic, strong) id mockLocation;
 @property(nonatomic, strong) id mockAirship;
-@property(nonatomic, strong) id mockLocationManager;
 @property(nonatomic, strong) id mockPushRegistration;
 @property(nonatomic, strong) id mockApplication;
 

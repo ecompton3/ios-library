@@ -1,7 +1,15 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import <Foundation/Foundation.h>
 #import "UADispatcher+Internal.h"
+
+@interface UAScheduledBlockEntry : NSObject
+
+@property (nonatomic, strong) void (^block)(void);
+@property (nonatomic, assign) NSTimeInterval time;
+
++ (instancetype)entryWithBlock:(void (^)(void))block time:(NSTimeInterval)time;
+@end
 
 /**
  * Test dispatcher.
@@ -10,6 +18,8 @@
  * advancing the dispatcher time.
  */
 @interface UATestDispatcher : UADispatcher
+
+@property (nonatomic, strong) NSMutableArray<UAScheduledBlockEntry *> *scheduledBlocks;
 
 /**
  * Factory method to create the test dispatcher.

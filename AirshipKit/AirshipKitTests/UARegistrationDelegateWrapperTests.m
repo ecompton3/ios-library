@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import <UIKit/UIKit.h>
 #import "UABaseTest.h"
@@ -72,7 +72,7 @@
 
     [self.wrapper notificationRegistrationFinishedWithAuthorizedSettings:authorizedSettings legacyOptions:legacyOptions categories:categories status:status];
 
-    [self waitForExpectationsWithTimeout:5 handler:nil];
+    [self waitForTestExpectations];
     [self.mockDelegate verify];
 }
 

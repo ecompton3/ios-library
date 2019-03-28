@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UAComponentDisabler+Internal.h"
 #import "UABaseTest.h"
@@ -28,7 +28,7 @@
     self.mockIAMComponent = [self mockForClass:[UAComponent class]];
     self.mockPushComponent = [self mockForClass:[UAComponent class]];
     self.mockAirship = [self mockForClass:[UAirship class]];
-    [[[self.mockAirship stub] andReturn:self.mockAirship] shared];
+    [UAirship setSharedAirship:self.mockAirship];
     [[[self.mockAirship stub] andReturn:self.mockRemoteDataManager] remoteDataManager];
 
     // mock uairship to return mocked airship components

@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 #import "UATagGroupsLookupManager+Internal.h"
@@ -10,7 +10,6 @@
 
 @interface UATagGroupsLookupManagerTest : UABaseTest
 @property (nonatomic, strong) UATagGroupsLookupManager *lookupManager;
-@property (nonatomic, strong) UAPreferenceDataStore *dataStore;
 @property (nonatomic, strong) id mockAirship;
 @property (nonatomic, strong) id mockPush;
 @property (nonatomic, strong) id mockAPIClient;
@@ -26,7 +25,6 @@
 - (void)setUp {
     [super setUp];
     self.requestedTagGroups = [UATagGroups tagGroupsWithTags:@{@"foo": @[@"bar", @"baz"]}];
-    self.dataStore = [UAPreferenceDataStore preferenceDataStoreWithKeyPrefix:@"UATagGroupsLookupManagerTest"];
     self.testDate = [[UATestDate alloc] init];
 
     self.mockDelegate = [self mockForProtocol:@protocol(UATagGroupsLookupManagerDelegate)];
@@ -41,11 +39,6 @@
 
     self.lookupManager.componentEnabled = YES;
     self.lookupManager.delegate = self.mockDelegate;
-}
-
-- (void)tearDown {
-    [self.dataStore removeAll];
-    [super tearDown];
 }
 
 - (void)setupMocks:(NSString *)channelID channelTagsEnabled:(BOOL)enabled {
@@ -80,7 +73,7 @@
         [fetchCompleted fulfill];
     }];
 
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForTestExpectations];
 }
 
 - (void)testGetTagsNoChannel {
@@ -95,7 +88,7 @@
         [fetchCompleted fulfill];
     }];
 
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForTestExpectations];
 }
 
 - (void)testGetOnlyDeviceTags {
@@ -113,7 +106,7 @@
         [fetchCompleted fulfill];
     }];
 
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForTestExpectations];
 
     [self.mockAPIClient verify];
 }
@@ -153,7 +146,7 @@
         [fetchCompleted fulfill];
     }];
 
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForTestExpectations];
     [self.mockCache verify];
     [self.mockMutationHistory verify];
     [self.mockAPIClient verify];
@@ -204,7 +197,7 @@
         [fetchCompleted fulfill];
     }];
 
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForTestExpectations];
     [self.mockCache verify];
     [self.mockMutationHistory verify];
     [self.mockAPIClient verify];
@@ -256,7 +249,7 @@
         [fetchCompleted fulfill];
     }];
 
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForTestExpectations];
     [self.mockCache verify];
     [self.mockMutationHistory verify];
     [self.mockAPIClient verify];
@@ -296,7 +289,7 @@
         [fetchCompleted fulfill];
     }];
 
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForTestExpectations];
     [self.mockCache verify];
     [self.mockAPIClient verify];
 }
@@ -338,7 +331,51 @@
         [fetchCompleted fulfill];
     }];
 
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForTestExpectations];
+    [self.mockCache verify];
+    [self.mockAPIClient verify];
+}
+
+- (void)testTagGroupsDelegate {
+    UATagGroups *requestedTagGroups = [UATagGroups tagGroupsWithTags:@{@"foo": @[@"hi"]}];
+
+    UATagGroups *expectedMergedGroups = [UATagGroups tagGroupsWithTags:@{@"foo": @[@"hi", @"bar", @"baz"]}];
+
+    UATagGroupsLookupResponse *response = [UATagGroupsLookupResponse responseWithTagGroups:requestedTagGroups
+                                                                                    status:200
+                                                                     lastModifiedTimestamp:@"2018-03-02T22:56:09"];
+    XCTestExpectation *mergedTagsCached = [self expectationWithDescription:@"merged tags cached"];
+
+    [[self.mockCache expect] setResponse:response];
+
+    // Expect properly merged tag groups to be set as requestedTagGroups in cache
+    [[[self.mockCache expect] andDo:^(NSInvocation *invocation) {
+        void *arg;
+        [invocation getArgument:&arg atIndex:2];
+        UATagGroups *mergedGroups = (__bridge UATagGroups *)arg;
+
+        XCTAssertEqualObjects(mergedGroups, expectedMergedGroups);
+        [mergedTagsCached fulfill];
+    }] setRequestedTagGroups:OCMOCK_ANY];
+
+    XCTestExpectation *apiFetchCompleted = [self expectationWithDescription:@"API fetch completed"];
+
+    [[[self.mockAPIClient expect] andDo:^(NSInvocation *invocation) {
+        void *arg;
+        [invocation getArgument:&arg atIndex:5];
+        void (^completionHandler)(UATagGroupsLookupResponse *) = (__bridge void(^)(UATagGroupsLookupResponse *))arg;
+        [[[self.mockCache expect] andReturn:response] response];
+        completionHandler(response);
+        [apiFetchCompleted fulfill];
+    }] lookupTagGroupsWithChannelID:OCMOCK_ANY requestedTagGroups:OCMOCK_ANY cachedResponse:OCMOCK_ANY completionHandler:OCMOCK_ANY];
+
+    XCTestExpectation *fetchCompleted = [self expectationWithDescription:@"fetch completed"];
+
+    [self.lookupManager getTagGroups:requestedTagGroups completionHandler:^(UATagGroups * _Nonnull tagGroups, NSError * _Nonnull error) {
+        [fetchCompleted fulfill];
+    }];
+
+    [self waitForTestExpectations];
     [self.mockCache verify];
     [self.mockAPIClient verify];
 }

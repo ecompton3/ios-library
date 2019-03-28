@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 #import "UAInAppMessageAudienceChecks+Internal.h"
@@ -8,13 +8,13 @@
 #import "UAirship+Internal.h"
 #import "UAPush+Internal.h"
 #import "UAInAppMessageTagSelector.h"
-#import "UAApplicationMetrics+Internal.h"
+#import "UAApplicationMetrics.h"
 #import "UAJSONPredicate.h"
 
 @interface UAInAppMessageAudienceChecksTest : UABaseTest
 
 @property (nonatomic, strong) id mockAirship;
-@property (nonatomic, strong) id mockLocationManager;
+@property (nonatomic, strong) id mockLocation;
 @property (nonatomic, strong) id mockPush;
 
 @end
@@ -48,10 +48,9 @@
         builder.locationOptIn = @NO;
     }];
     
-    id mockLocation = [self strictMockForClass:[UALocation class]];
-    [[[mockLocation stub] andReturnValue:@NO] isLocationUpdatesEnabled];
-    [[[self.mockAirship stub] andReturn:mockLocation] sharedLocation];
-    
+    [[[self.mockLocation stub] andReturnValue:@NO] isLocationOptedIn];
+    [[[self.mockLocation stub] andReturnValue:@YES] isLocationUpdatesEnabled];
+
     // test
     XCTAssertFalse([UAInAppMessageAudienceChecks checkDisplayAudienceConditions:requiresOptedIn]);
     XCTAssertTrue([UAInAppMessageAudienceChecks checkDisplayAudienceConditions:requiresOptedOut]);

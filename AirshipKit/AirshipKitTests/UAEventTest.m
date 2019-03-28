@@ -1,11 +1,10 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <CoreTelephony/CTCarrier.h>
 
 #import "UAPush+Internal.h"
-#import "UAUser+Internal.h"
 #import "UAEvent+Internal.h"
 #import "UAirship+Internal.h"
 #import "UAAnalytics.h"
@@ -30,7 +29,6 @@
 @property (nonatomic, strong) id application;
 @property (nonatomic, strong) id push;
 @property (nonatomic, strong) id currentDevice;
-@property (nonatomic, strong) id user;
 @property (nonatomic, strong) id utils;
 
 @end
@@ -42,13 +40,11 @@
 
     self.analytics = [self mockForClass:[UAAnalytics class]];
     self.push = [self mockForClass:[UAPush class]];
-    self.user = [self mockForClass:[UAUser class]];
 
     self.airship = [self mockForClass:[UAirship class]];
 
     [[[self.airship stub] andReturn:self.analytics] sharedAnalytics];
     [[[self.airship stub] andReturn:self.push] push];
-    [[[self.airship stub] andReturn:self.user] inboxUser];
 
     [UAirship setSharedAirship:self.airship];
 
@@ -83,8 +79,6 @@
  * Test app init event
  */
 - (void)testAppInitEvent {
-    [[[self.user stub] andReturn:@"user ID"] username];
-
     [[[self.analytics stub] andReturn:@"push ID"] conversionSendID];
     [[[self.analytics stub] andReturn:@"base64metadataString"] conversionPushMetadata];
     [[[self.analytics stub] andReturn:@"rich push ID"] conversionRichPushID];
@@ -103,8 +97,7 @@
 
     [[[self.push stub] andReturnValue:OCMOCK_VALUE(UAAuthorizationStatusNotDetermined)] authorizationStatus];
 
-    NSDictionary *expectedData = @{@"user_id": @"user ID",
-                                   @"connection_type": @"cell",
+    NSDictionary *expectedData = @{@"connection_type": @"cell",
                                    @"push_id": @"push ID",
                                    @"metadata": @"base64metadataString",
                                    @"rich_push_id": @"rich push ID",
@@ -116,7 +109,6 @@
                                    @"lib_version": @"airship version",
                                    @"package_version": @"",
                                    @"foreground": @"true"};
-
 
     UAAppInitEvent *event = [UAAppInitEvent event];
 
@@ -130,7 +122,6 @@
  * Test app foreground event
  */
 - (void)testAppForegroundEvent {
-    [[[self.user stub] andReturn:@"user ID"] username];
     [[[self.analytics stub] andReturn:@"push ID"] conversionSendID];
     [[[self.analytics stub] andReturn:@"base64metadataString"] conversionPushMetadata];
     [[[self.analytics stub] andReturn:@"rich push ID"] conversionRichPushID];
@@ -147,8 +138,7 @@
     [[[self.push stub] andReturnValue:OCMOCK_VALUE(UAAuthorizationStatusProvisional)] authorizationStatus];
 
     // Same as app init but without the foreground key
-    NSDictionary *expectedData = @{@"user_id": @"user ID",
-                                   @"connection_type": @"cell",
+    NSDictionary *expectedData = @{@"connection_type": @"cell",
                                    @"push_id": @"push ID",
                                    @"metadata": @"base64metadataString",
                                    @"rich_push_id": @"rich push ID",
@@ -210,13 +200,13 @@
     [[[self.push stub] andReturnValue:@YES] pushTokenRegistrationEnabled];
     [[[self.push stub] andReturn:@"a12312ad"] deviceToken];
     [[[self.push stub] andReturn:@"someChannelID"] channelID];
-    [[[self.user stub] andReturn:@"someUserID"] username];
 
     NSDictionary *expectedData = @{@"device_token": @"a12312ad",
                                    @"channel_id": @"someChannelID",
-                                   @"user_id": @"someUserID"};
+                                   };
 
     UADeviceRegistrationEvent *event = [UADeviceRegistrationEvent event];
+
     XCTAssertEqualObjects(event.data, expectedData, @"Event data is unexpected.");
     XCTAssertEqualObjects(event.eventType, @"device_registration", @"Event type is unexpected.");
     XCTAssertNotNil(event.eventID, @"Event should have an ID");
@@ -229,10 +219,8 @@
     [[[self.push stub] andReturnValue:@NO] pushTokenRegistrationEnabled];
     [[[self.push stub] andReturn:@"a12312ad"] deviceToken];
     [[[self.push stub] andReturn:@"someChannelID"] channelID];
-    [[[self.user stub] andReturn:@"someUserID"] username];
 
-    NSDictionary *expectedData = @{@"channel_id": @"someChannelID",
-                                   @"user_id": @"someUserID"};
+    NSDictionary *expectedData = @{@"channel_id": @"someChannelID"};
 
     UADeviceRegistrationEvent *event = [UADeviceRegistrationEvent event];
     XCTAssertEqualObjects(event.data, expectedData, @"Event data is unexpected.");

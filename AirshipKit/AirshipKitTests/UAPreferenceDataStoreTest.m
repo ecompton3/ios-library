@@ -1,24 +1,15 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 #import "UAPreferenceDataStore+Internal.h"
 
 @interface UAPreferenceDataStoreTest : UABaseTest
 
-@property(nonatomic, strong) UAPreferenceDataStore *dataStore;
-
 @end
 
 @implementation UAPreferenceDataStoreTest
 
-- (void)setUp {
-    [super setUp];
-    self.dataStore = [UAPreferenceDataStore preferenceDataStoreWithKeyPrefix:@"asfa"];
-}
-
 - (void)tearDown {
-    [self.dataStore removeAll];
-
     [super tearDown];
     [NSUserDefaults resetStandardUserDefaults];
 }

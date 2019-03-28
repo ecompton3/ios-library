@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import <UIKit/UIKit.h>
 
@@ -7,6 +7,8 @@
 #import "UAGlobal.h"
 #import "UALocationEvent.h"
 #import "UAAnalytics.h"
+#import "UASystemVersion+Internal.h"
+
 
 NSString *const UALocationAutoRequestAuthorizationEnabled = @"UALocationAutoRequestAuthorizationEnabled";
 NSString *const UALocationUpdatesEnabled = @"UALocationUpdatesEnabled";
@@ -14,12 +16,13 @@ NSString *const UALocationBackgroundUpdatesAllowed = @"UALocationBackgroundUpdat
 
 @implementation UALocation
 
-- (instancetype)initWithAnalytics:(UAAnalytics *)analytics dataStore:(UAPreferenceDataStore *)dataStore notificationCenter:(NSNotificationCenter *)notificationCenter {
+- (instancetype)initWithAnalytics:(UAAnalytics *)analytics dataStore:(UAPreferenceDataStore *)dataStore notificationCenter:(NSNotificationCenter *)notificationCenter systemVersion:(UASystemVersion *)systemVersion {
     self = [super initWithDataStore:dataStore];
 
     if (self) {
         self.dataStore = dataStore;
         self.analytics = analytics;
+        self.systemVersion = systemVersion;
 
         // Update the location service on app background
         [notificationCenter addObserver:self
@@ -42,12 +45,22 @@ NSString *const UALocationBackgroundUpdatesAllowed = @"UALocationBackgroundUpdat
 }
 
 
-+ (instancetype)locationWithAnalytics:(UAAnalytics *)analytics dataStore:(UAPreferenceDataStore *)dataStore {
-    return [[UALocation alloc] initWithAnalytics:analytics dataStore:dataStore notificationCenter:[NSNotificationCenter defaultCenter]];
++ (instancetype)locationWithAnalytics:(UAAnalytics *)analytics
+                            dataStore:(UAPreferenceDataStore *)dataStore {
+    return [[UALocation alloc] initWithAnalytics:analytics
+                                       dataStore:dataStore
+                              notificationCenter:[NSNotificationCenter defaultCenter]
+                                   systemVersion:[UASystemVersion systemVersion]];
 }
 
-+ (instancetype)locationWithAnalytics:(UAAnalytics *)analytics dataStore:(UAPreferenceDataStore *)dataStore notificationCenter:(NSNotificationCenter *)notificationCenter {
-    return [[UALocation alloc] initWithAnalytics:analytics dataStore:dataStore notificationCenter:notificationCenter];
++ (instancetype)locationWithAnalytics:(UAAnalytics *)analytics
+                            dataStore:(UAPreferenceDataStore *)dataStore
+                   notificationCenter:(NSNotificationCenter *)notificationCenter
+                        systemVersion:(UASystemVersion *)systemVersion {
+    return [[UALocation alloc] initWithAnalytics:analytics
+                                       dataStore:dataStore
+                              notificationCenter:notificationCenter
+                                   systemVersion:systemVersion];
 }
 
 - (BOOL)isAutoRequestAuthorizationEnabled {
