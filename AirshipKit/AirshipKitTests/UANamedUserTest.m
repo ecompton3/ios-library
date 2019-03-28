@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 #import "UAirship+Internal.h"
@@ -14,16 +14,12 @@
 
 @property (nonatomic, strong) id mockedAirship;
 @property (nonatomic, strong) UANamedUser *namedUser;
-@property (nonatomic, strong) UAPreferenceDataStore *dataStore;
 @property (nonatomic, strong) id mockedNamedUserClient;
 @property (nonatomic, strong) id mockedUAPush;
 @property (nonatomic, copy) NSString *pushChannelID;
 @property (nonatomic, strong) id mockTagGroupsRegistrar;
 @property (nonatomic, strong) NSMutableDictionary *addTagGroups;
 @property (nonatomic, strong) NSMutableDictionary *removeTagGroups;
-@property (nonatomic, strong) id mockApplication;
-@property (nonatomic, strong) id mockConfig;
-
 @end
 
 @implementation UANamedUserTest
@@ -35,30 +31,26 @@ void (^namedUserFailureDoBlock)(NSInvocation *);
 - (void)setUp {
     [super setUp];
 
-    self.dataStore = [UAPreferenceDataStore preferenceDataStoreWithKeyPrefix:@"uapush.test."];
-
     self.mockedUAPush = [self mockForClass:[UAPush class]];
     [[[self.mockedUAPush stub] andDo:^(NSInvocation *invocation) {
         [invocation setReturnValue:&self->_pushChannelID];
     }] channelID];
 
-    self.mockConfig = [self mockForClass:[UAConfig class]];
-
 
     self.mockedAirship = [self mockForClass:[UAirship class]];
-    [[[self.mockedAirship stub] andReturn:self.mockedAirship] shared];
     [[[self.mockedAirship stub] andReturn:self.mockedUAPush] push];
+    [UAirship setSharedAirship:self.mockedAirship];
 
     self.pushChannelID = @"someChannel";
 
     self.mockTagGroupsRegistrar = [self mockForClass:[UATagGroupsRegistrar class]];
 
-    self.namedUser = [UANamedUser namedUserWithPush:self.mockedUAPush config:self.mockConfig dataStore:self.dataStore tagGroupsRegistrar:self.mockTagGroupsRegistrar];
+    self.namedUser = [UANamedUser namedUserWithPush:self.mockedUAPush config:self.config
+                                          dataStore:self.dataStore
+                                 tagGroupsRegistrar:self.mockTagGroupsRegistrar];
 
     self.mockedNamedUserClient = [self mockForClass:[UANamedUserAPIClient class]];
     self.namedUser.namedUserAPIClient = self.mockedNamedUserClient;
-    self.mockApplication = [self mockForClass:[UIApplication class]];
-    [[[self.mockApplication stub] andReturn:self.mockApplication] sharedApplication];
 
     // set up the named user
     self.namedUser.identifier = @"fakeNamedUser";
@@ -81,13 +73,9 @@ void (^namedUserFailureDoBlock)(NSInvocation *);
 }
 
 - (void)tearDown {
-    [self.dataStore removeAll];
     [self.mockedNamedUserClient stopMocking];
     [self.mockedAirship stopMocking];
     [self.mockedUAPush stopMocking];
-    [self.mockApplication stopMocking];
-    [self.mockConfig stopMocking];
-
     [super tearDown];
 }
 

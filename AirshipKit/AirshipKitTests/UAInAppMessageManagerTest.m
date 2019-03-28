@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 
@@ -11,11 +11,11 @@
 #import "UAInAppMessageBannerDisplayContent+Internal.h"
 #import "UAPush+Internal.h"
 #import "UAInAppMessageAudience.h"
-#import "UALocation+Internal.h"
 #import "UAActionRunner+Internal.h"
 #import "UAInAppMessageAudienceChecks+Internal.h"
 #import "UATestDispatcher.h"
 #import "UAInAppMessageTagSelector+Internal.h"
+#import "UAInAppMessageDefaultDisplayCoordinator+Internal.h"
 
 @interface UAInAppMessageManagerTest : UABaseTest
 @property(nonatomic, strong) UAInAppMessageManager *manager;
@@ -24,11 +24,13 @@
 @property(nonatomic, strong) id mockAutomationEngine;
 @property(nonatomic, strong) UAInAppMessageScheduleInfo *scheduleInfo;
 @property(nonatomic, strong) UAInAppMessageScheduleInfo *scheduleInfoWithTagGroups;
-@property (nonatomic, strong) UAPreferenceDataStore *dataStore;
 @property (nonatomic, strong) id mockPush;
 @property (nonatomic, strong) id mockActionRunner;
 @property (nonatomic, strong) UATestDispatcher *testDispatcher;
 @property (nonatomic, strong) id mockTagGroupsLookupManager;
+@property (nonatomic, strong) id mockDefaultDisplayCoordinator;
+@property (nonatomic, strong) id mockDelegatedDisplayCoordinator;
+
 @end
 
 @implementation UAInAppMessageManagerTest
@@ -39,19 +41,24 @@
     self.mockDelegate = [self mockForProtocol:@protocol(UAInAppMessagingDelegate)];
     self.mockAdapter = [self mockForProtocol:@protocol(UAInAppMessageAdapterProtocol)];
     self.mockAutomationEngine = [self mockForClass:[UAAutomationEngine class]];
-    self.dataStore = [UAPreferenceDataStore preferenceDataStoreWithKeyPrefix:@"UAInAppMessageManagerTest."];
-    [self.dataStore removeAll];
+
     self.mockPush = [self mockForClass:[UAPush class]];
     self.mockActionRunner = [self mockForClass:[UAActionRunner class]];
     self.testDispatcher = [UATestDispatcher testDispatcher];
     self.mockTagGroupsLookupManager = [self mockForClass:[UATagGroupsLookupManager class]];
+
+    self.mockDefaultDisplayCoordinator = [self mockForClass:[UAInAppMessageDefaultDisplayCoordinator class]];
+
+    // Note: KVO fails for protocol mocks
+    self.mockDelegatedDisplayCoordinator = [self mockForClass:[UAInAppMessageDefaultDisplayCoordinator class]];;
 
     self.manager = [UAInAppMessageManager managerWithAutomationEngine:self.mockAutomationEngine
                                                tagGroupsLookupManager:self.mockTagGroupsLookupManager
                                                     remoteDataManager:[self mockForClass:[UARemoteDataManager class]]
                                                             dataStore:self.dataStore
                                                                  push:self.mockPush
-                                                           dispatcher:self.testDispatcher];
+                                                           dispatcher:self.testDispatcher
+                                                   displayCoordinator:self.mockDefaultDisplayCoordinator];
     self.manager.paused = NO;
 
     self.manager.delegate = self.mockDelegate;
@@ -254,6 +261,53 @@
     [checks verify];
 }
 
+- (void)testCheckAudience {
+    // check an audience the user is in
+    XCTestExpectation *checkInAudienceFinished = [self expectationWithDescription:@"checkAudience1 should be finished"];
+    [self.manager checkAudience:self.scheduleInfo.message.audience completionHandler:^(BOOL inAudience, NSError * _Nullable error) {
+        XCTAssertTrue(inAudience);
+        XCTAssertNil(error);
+        [checkInAudienceFinished fulfill];
+    }];
+    
+    // check an audience the user is not in
+    UATagGroups *requestedTagGroups = [UATagGroups tagGroupsWithTags:@{@"group" : @[@""]}];
+    
+    [[[self.mockTagGroupsLookupManager expect] andDo:^(NSInvocation *invocation) {
+        void *arg;
+        [invocation getArgument:&arg atIndex:3];
+        void(^completionHandler)(UATagGroups * _Nullable tagGroups, NSError *error);
+        completionHandler = (__bridge void(^)(UATagGroups * _Nullable tagGroups, NSError *error))arg;
+        completionHandler(requestedTagGroups, nil);
+    }] getTagGroups:OCMOCK_ANY completionHandler:OCMOCK_ANY];
+
+    XCTestExpectation *checkNotInAudienceFinished = [self expectationWithDescription:@"checkAudience2 should be finished"];
+    [self.manager checkAudience:self.scheduleInfoWithTagGroups.message.audience completionHandler:^(BOOL inAudience, NSError * _Nullable error) {
+        XCTAssertFalse(inAudience);
+        XCTAssertNil(error);
+        [checkNotInAudienceFinished fulfill];
+    }];
+
+    // check an error getting the tag groups responds as user is not in audience
+    [[[self.mockTagGroupsLookupManager expect] andDo:^(NSInvocation *invocation) {
+        void *arg;
+        [invocation getArgument:&arg atIndex:3];
+        void(^completionHandler)(UATagGroups * _Nullable tagGroups, NSError *error);
+        completionHandler = (__bridge void(^)(UATagGroups * _Nullable tagGroups, NSError *error))arg;
+        NSError *error = [NSError errorWithDomain:@"com.urbanairship.test" code:1 userInfo:nil];
+        completionHandler(nil, error);
+    }] getTagGroups:OCMOCK_ANY completionHandler:OCMOCK_ANY];
+    
+    XCTestExpectation *checkErrorAudienceFinished = [self expectationWithDescription:@"checkAudience2 should be finished"];
+    [self.manager checkAudience:self.scheduleInfoWithTagGroups.message.audience completionHandler:^(BOOL inAudience, NSError * _Nullable error) {
+        XCTAssertFalse(inAudience);
+        XCTAssertNotNil(error);
+        [checkErrorAudienceFinished fulfill];
+    }];
+
+    [self waitForTestExpectations];
+}
+
 - (void)testPrepareAudienceCheckFailureMissBehaviorCancel {
     UAInAppMessageScheduleInfo *scheduleInfo = [self sampleScheduleInfoWithMissBehavior:UAInAppMessageAudienceMissBehaviorCancel];
     
@@ -361,6 +415,8 @@
 }
 
 - (void)testExecuteSchedule {
+    [[[self.mockDefaultDisplayCoordinator stub] andReturnValue:@(YES)] isReady];
+
     UASchedule *testSchedule = [UASchedule scheduleWithIdentifier:@"expected_id" info:self.scheduleInfo];
 
     // Prepare
@@ -382,6 +438,7 @@
 
     // isReady
     [[[self.mockAdapter stub] andReturnValue:@(YES)] isReadyToDisplay];
+
     XCTAssertTrue([self.manager isScheduleReadyToExecute:testSchedule]);
 
     // Display
@@ -414,6 +471,8 @@
 }
 
 - (void)testPauseDisplay {
+    [[[self.mockDefaultDisplayCoordinator stub] andReturnValue:@(YES)] isReady];
+
     UASchedule *testSchedule = [UASchedule scheduleWithIdentifier:@"expected_id" info:self.scheduleInfo];
 
     // Prepare
@@ -540,9 +599,69 @@
     XCTAssertTrue(completionHandlerCalled);
     [self.mockAutomationEngine verify];
 }
+- (void)testDisplayInterval {
+    [[self.mockDefaultDisplayCoordinator expect] setDisplayInterval:100];
+    self.manager.displayInterval = 100;
+    [self.mockDefaultDisplayCoordinator verify];
+}
 
-- (void)testDisplayLock {
-    self.manager.displayInterval = 10000;
+- (void)testDisplayCoordination {
+    UASchedule *testSchedule = [UASchedule scheduleWithIdentifier:@"expected_id" info:self.scheduleInfo];
+
+    [[[self.mockAdapter stub] andDo:^(NSInvocation *invocation) {
+        void (^prepareBlock)(UAInAppMessagePrepareResult);
+        [invocation getArgument:&prepareBlock atIndex:2];
+        prepareBlock(UAInAppMessagePrepareResultSuccess);
+    }] prepare:OCMOCK_ANY];
+
+    [[[self.mockAdapter stub] andReturnValue:@(YES)] isReadyToDisplay];
+
+    [[[self.mockDelegate expect] andReturn:self.scheduleInfo.message] extendMessage:[OCMArg isKindOfClass:[UAInAppMessage class]]];
+
+    // Prepare
+    XCTestExpectation *prepareFinished = [self expectationWithDescription:@"prepare should be finished"];
+    [self.manager prepareSchedule:testSchedule completionHandler:^(UAAutomationSchedulePrepareResult result) {
+        XCTAssertEqual(UAAutomationSchedulePrepareResultContinue, result);
+        [prepareFinished fulfill];
+    }];
+
+    [self waitForTestExpectations];
+
+    [[[self.mockDefaultDisplayCoordinator expect] andReturnValue:@(NO)] isReady];
+
+    // False - coordinator is not ready
+    XCTAssertFalse([self.manager isScheduleReadyToExecute:testSchedule]);
+
+    [[[self.mockDefaultDisplayCoordinator expect] andReturnValue:@(YES)] isReady];
+
+    // True - coordinator is ready
+    XCTAssertTrue([self.manager isScheduleReadyToExecute:testSchedule]);
+
+    [[self.mockDefaultDisplayCoordinator expect] didBeginDisplayingMessage:OCMOCK_ANY];
+    [[self.mockDefaultDisplayCoordinator expect] didFinishDisplayingMessage:OCMOCK_ANY];
+
+    // Display
+    XCTestExpectation *displayBlockCalled = [self expectationWithDescription:@"display block should be called"];
+    [[[self.mockAdapter expect] andDo:^(NSInvocation *invocation) {
+        void (^displayBlock)(UAInAppMessageResolution *);
+        [invocation getArgument:&displayBlock atIndex:2];
+        displayBlock([UAInAppMessageResolution userDismissedResolution]);
+        [displayBlockCalled fulfill];
+    }] display:OCMOCK_ANY];
+
+    XCTestExpectation *executeFinished = [self expectationWithDescription:@"execute finished"];
+    [self.manager executeSchedule:testSchedule completionHandler:^{
+        [executeFinished fulfill];
+    }];
+
+    [self waitForTestExpectations];
+
+    [self.mockAutomationEngine verify];
+    [self.mockDefaultDisplayCoordinator verify];
+}
+
+- (void)testDelegatedDisplayCoordination {
+    [[[self.mockDelegate stub] andReturn:self.mockDelegatedDisplayCoordinator] displayCoordinatorForMessage:[OCMArg isKindOfClass:[UAInAppMessage class]]];
 
     UASchedule *testSchedule = [UASchedule scheduleWithIdentifier:@"expected_id" info:self.scheduleInfo];
 
@@ -565,8 +684,18 @@
 
     [self waitForTestExpectations];
 
-    // isReady
+    [[[self.mockDelegatedDisplayCoordinator expect] andReturnValue:@(NO)] isReady];
+
+    // False - coordinator is not ready
+    XCTAssertFalse([self.manager isScheduleReadyToExecute:testSchedule]);
+
+    [[[self.mockDelegatedDisplayCoordinator expect] andReturnValue:@(YES)] isReady];
+
+    // True - coordinator is ready
     XCTAssertTrue([self.manager isScheduleReadyToExecute:testSchedule]);
+
+    [[self.mockDelegatedDisplayCoordinator expect] didBeginDisplayingMessage:OCMOCK_ANY];
+    [[self.mockDelegatedDisplayCoordinator expect] didFinishDisplayingMessage:OCMOCK_ANY];
 
     // Display
     XCTestExpectation *displayBlockCalled = [self expectationWithDescription:@"display block should be called"];
@@ -584,34 +713,8 @@
 
     [self waitForTestExpectations];
 
-    [[[self.mockDelegate expect] andReturn:self.scheduleInfo.message] extendMessage:[OCMArg isKindOfClass:[UAInAppMessage class]]];
-
-    // Prepare again
-    prepareFinished = [self expectationWithDescription:@"prepare should be finished"];
-    [self.manager prepareSchedule:testSchedule completionHandler:^(UAAutomationSchedulePrepareResult result) {
-        XCTAssertEqual(UAAutomationSchedulePrepareResultContinue, result);
-        [prepareFinished fulfill];
-    }];
-
-    [self waitForTestExpectations];
-
-    // False - display is locked
-    XCTAssertFalse([self.manager isScheduleReadyToExecute:testSchedule]);
-
-    // Advance dispatcher
-    [self.testDispatcher advanceTime:9999];
-
-    // False - should still be locked
-    XCTAssertFalse([self.manager isScheduleReadyToExecute:testSchedule]);
-
-    // Advance dispatcher
-    [self.testDispatcher advanceTime:1];
-
-    // True - display is unlocked
-    XCTAssertTrue([self.manager isScheduleReadyToExecute:testSchedule]);
-
     [self.mockAutomationEngine verify];
+    [self.mockDelegatedDisplayCoordinator verify];
 }
-
 
 @end

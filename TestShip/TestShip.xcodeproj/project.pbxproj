@@ -299,7 +299,7 @@
 			};
 			buildConfigurationList = 99EAB9D51F2FB15F0068B841 /* Build configuration list for PBXProject "TestShip" */;
 			compatibilityVersion = "Xcode 3.2";
-			developmentRegion = English;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
@@ -413,7 +413,7 @@
 			files = (
 			);
 			inputPaths = (
-				"${SRCROOT}/../Pods/Target Support Files/Pods-TestShipTests/Pods-TestShipTests-frameworks.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-TestShipTests/Pods-TestShipTests-frameworks.sh",
 				"${BUILT_PRODUCTS_DIR}/KIF/KIF.framework",
 			);
 			name = "[CP] Embed Pods Frameworks";
@@ -422,7 +422,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/../Pods/Target Support Files/Pods-TestShipTests/Pods-TestShipTests-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-TestShipTests/Pods-TestShipTests-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -666,7 +666,6 @@
 				DEVELOPMENT_TEAM = PGJV57GD94;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = TestShip/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.urbanairship.testship;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -686,7 +685,6 @@
 				DEVELOPMENT_TEAM = PGJV57GD94;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = TestShip/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.urbanairship.testship;
 				PRODUCT_NAME = "$(TARGET_NAME)";

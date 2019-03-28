@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import <UIKit/UIKit.h>
 #import "UABaseTest.h"
@@ -9,7 +9,6 @@
 
 @interface UALegacyInAppMessageTest : UABaseTest
 @property(nonatomic, strong) id mockAirship;
-@property(nonatomic, strong) UAPreferenceDataStore *dataStore;
 @property(nonatomic, strong) NSDictionary *payload;
 @end
 
@@ -19,9 +18,8 @@
     [super setUp];
 
     self.mockAirship = [self mockForClass:[UAirship class]];
-    self.dataStore = [UAPreferenceDataStore preferenceDataStoreWithKeyPrefix:@"test"];
-    [[[self.mockAirship stub] andReturn:self.mockAirship] shared];
     [[[self.mockAirship stub] andReturn:self.dataStore] dataStore];
+    [UAirship setSharedAirship:self.mockAirship];
 
     id expiry = @"2020-12-15T11:45:22";
     id extra = @{@"foo":@"bar", @"baz":@12345};

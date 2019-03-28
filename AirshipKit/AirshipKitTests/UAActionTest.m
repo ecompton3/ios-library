@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 #import "UAAction+Internal.h"
@@ -137,7 +137,7 @@
         }];
     });
 
-    [self waitForExpectationsWithTimeout:1 handler:nil];
+    [self waitForTestExpectations];
 }
 
 /*
@@ -164,7 +164,7 @@
         [testExpectation fulfill];
     }];
 
-    [self waitForExpectationsWithTimeout:1 handler:nil];
+    [self waitForTestExpectations];
 }
 
 /*

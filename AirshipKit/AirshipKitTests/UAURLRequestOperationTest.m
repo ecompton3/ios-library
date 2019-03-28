@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 #import "UAURLRequestOperation+Internal.h"
@@ -65,7 +65,7 @@
     XCTAssertEqual(operationFinished, NO);
 
     // Wait for the operation to call the request
-    [self waitForExpectationsWithTimeout:1 handler:nil];
+    [self waitForTestExpectations];
     [self.mockRequest verify];
 
     // Call the completion handler

@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 #import "UAConfig+Internal.h"
@@ -325,7 +325,10 @@
     XCTAssertTrue(copy.automaticSetupEnabled == config.automaticSetupEnabled);
     XCTAssertTrue(copy.analyticsEnabled == config.analyticsEnabled);
     XCTAssertTrue(copy.profilePath == config.profilePath);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     XCTAssertTrue(copy.cacheDiskSizeInMB == config.cacheDiskSizeInMB);
+#pragma GCC diagnostic pop
     XCTAssertTrue(copy.clearUserOnAppRestore == config.clearUserOnAppRestore);
     XCTAssertTrue(copy.whitelist == config.whitelist);
     XCTAssertTrue(copy.clearNamedUserOnAppRestore == config.clearNamedUserOnAppRestore);
@@ -335,6 +338,7 @@
     XCTAssertTrue(copy.defaultDetectProvisioningMode == config.defaultDetectProvisioningMode);
     XCTAssertTrue(copy.messageCenterStyleConfig == config.messageCenterStyleConfig);
     XCTAssertTrue(copy.itunesID == config.itunesID);
+    XCTAssertTrue(copy.requestAuthorizationToUseNotifications == config.requestAuthorizationToUseNotifications);
 }
 
 - (void) testInitialConfig {
@@ -350,7 +354,10 @@
     XCTAssertTrue(config.detectProvisioningMode);   // True because defaultDetectProvisioningMode is set true after this is set false
     XCTAssertTrue(config.automaticSetupEnabled);
     XCTAssertTrue(config.analyticsEnabled);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     XCTAssertEqual(config.cacheDiskSizeInMB, 100);
+#pragma GCC diagnostic pop
     XCTAssertFalse(config.clearUserOnAppRestore);
     XCTAssertEqual(config.whitelist.count, 0);
     XCTAssertFalse(config.clearNamedUserOnAppRestore);
@@ -358,6 +365,7 @@
     XCTAssertEqual(config.customConfig.count, 0);
     XCTAssertFalse(config.channelCreationDelayEnabled);
     XCTAssertTrue(config.defaultDetectProvisioningMode);
+    XCTAssertTrue(config.requestAuthorizationToUseNotifications);
 }
 
 @end

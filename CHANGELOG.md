@@ -3,6 +3,53 @@ iOS Changelog
 
 Migration Guides: Documentation/Migration
 
+Version 10.2.1 - March 27, 2019
+=================================
+Patch release to fix Carthage build error in Xcode 10.2. Apps that use Carthage are
+encouraged to update.
+
+Changes
+-------
+- Removed armv7s from architectures
+- Streamlined expired message handling
+
+Version 10.2.0 - February 25, 2019
+==================================
+
+Minor release with enhancements to In-App Automation and modifications to make
+keychain access asynchronous throughout the SDK. This latter change is to 
+fix a rare issue with slow takeOff that can potentially affect the app review
+process. Apps experiencing this issue are encouraged to update.
+
+Changes:
+ 
+- GIF support for In-App Automation on iOS 11 and above.
+- Display coordinator architecture for more flexible custom IAA display management.
+- IAA button resolution events can be generated from HTML messages via the native bridge.
+- Keychain access is fully asynchronous. Synchronous properties on UAUser are now deprecated.
+
+Version 10.1.0 - January 29, 2019
+=================================
+Minor release that deprecates UAURLProtocol that was historically used for caching
+message center and landing pages, but was no longer being used because it's not
+compatible with WKWebView.
+
+Changes
+-------
+- UAURLProtocol is deprecated and no longer used.
+- Reuse a single NSURLSession for all Urban Airship requests.
+
+Version 10.0.4 - January 10, 2019
+================================
+Patch release to fix a few minor issues. Apps experiencing any of these issues should update.
+
+- Fixed how build architectures are specified for AirshipKit.
+- Addressed "missing creator for mutated node" warning in AirshipResources build.
+- Addressed warning when displaying a Message Center message with an invalid identifier.
+- Fixed handling of text styles in In-App Automation.
+- Allow HTML IAA messages to be closed using the native bridge.
+- Updated project files for Xcode 10.1
+
 Version 10.0.3 - October 22, 2018
 =================================
 Patch release to fix an issue with the "extra" object in In-App Automation.

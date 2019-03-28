@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 #import "UAOpenExternalURLAction.h"
@@ -6,14 +6,13 @@
 #import "UAActionArguments+Internal.h"
 #import "UAWhitelist.h"
 #import "UAirship+Internal.h"
+#import "UATestSystemVersion.h"
 
 @interface UAOpenExternalURLActionTest : UABaseTest
 
 @property (nonatomic, strong) UAActionArguments *emptyArgs;
 @property (nonatomic, strong) UAActionArguments *arguments;
 @property (nonatomic, strong) id mockApplication;
-@property (nonatomic, strong) id mockProcessInfo;
-@property (nonatomic, assign) int testOSMajorVersion;
 @property (nonatomic, assign) id mockWhitelist;
 @property (nonatomic, assign) id mockAirship;
 
@@ -24,18 +23,6 @@
 
 - (void)setUp {
     [super setUp];
-
-    // Set default OS major version to 10 by default
-    self.testOSMajorVersion = 10;
-    self.mockProcessInfo = [self mockForClass:[NSProcessInfo class]];
-    [[[self.mockProcessInfo stub] andReturn:self.mockProcessInfo] processInfo];
-    [[[[self.mockProcessInfo stub] andDo:^(NSInvocation *invocation) {
-        NSOperatingSystemVersion arg;
-        [invocation getArgument:&arg atIndex:2];
-
-        BOOL result = self.testOSMajorVersion >= arg.majorVersion;
-        [invocation setReturnValue:&result];
-    }] ignoringNonObjectArgs] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){0, 0, 0}];
 
     self.arguments = [[UAActionArguments alloc] init];
     self.mockApplication = [self mockForClass:[UIApplication class]];
@@ -50,7 +37,6 @@
 
 - (void)tearDown {
     [self.mockApplication stopMocking];
-    [self.mockProcessInfo stopMocking];
     [self.mockWhitelist stopMocking];
     [self.mockAirship stopMocking];
     [super tearDown];
@@ -131,11 +117,7 @@
         XCTAssertNil(performResult.error, @"result should have no error if the application successfully opens the url");
     }];
 
-    [self waitForExpectationsWithTimeout:5 handler:^(NSError *error) {
-        if (error) {
-            XCTFail(@"Failed to open URL with error %@.", error);
-        }
-    }];
+    [self waitForTestExpectations];
 
     XCTAssertNoThrow([self.mockApplication verify], @"application should try to open the url");
 }
@@ -166,11 +148,7 @@
         XCTAssertNil(performResult.error, @"result should have no error if the application successfully opens the url");
     }];
 
-    [self waitForExpectationsWithTimeout:5 handler:^(NSError *error) {
-        if (error) {
-            XCTFail(@"Failed to open URL with error %@.", error);
-        }
-    }];
+    [self waitForTestExpectations];
 
     XCTAssertNoThrow([self.mockApplication verify], @"application should try to open the url");
 }
@@ -202,11 +180,7 @@
         XCTAssertEqual(UAOpenExternalURLActionErrorCodeURLFailedToOpen, performResult.error.code, @"error code should be set to UAOpenExternalURLActionErrorCodeURLFailedToOpen");
     }];
 
-    [self waitForExpectationsWithTimeout:5 handler:^(NSError *error) {
-        if (error) {
-            XCTFail(@"Failed to open URL with error %@.", error);
-        }
-    }];
+    [self waitForTestExpectations];
 
     XCTAssertNoThrow([self.mockApplication verify], @"application should try to open the url");
 }
@@ -236,11 +210,7 @@
         XCTAssertEqualObjects(performResult.value, @"http://itunes.apple.com/some-app", @"results value should be http iTunes link");
     }];
 
-    [self waitForExpectationsWithTimeout:5 handler:^(NSError *error) {
-        if (error) {
-            XCTFail(@"Failed to open URL with error %@.", error);
-        }
-    }];
+    [self waitForTestExpectations];
 }
 
 @end

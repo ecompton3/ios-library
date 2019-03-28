@@ -8,13 +8,16 @@
       location = "group:AirshipAppExtensions/AirshipAppExtensions.xcodeproj">
    </FileRef>
    <FileRef
+      location = "group:AirshipDebugKit/AirshipDebugKit.xcodeproj">
+   </FileRef>
+   <FileRef
       location = "group:Sample/Sample.xcodeproj">
    </FileRef>
    <FileRef
       location = "group:SwiftSample/SwiftSample.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:SwiftSample/../tvOSSample/tvOSSample.xcodeproj">
+      location = "group:tvOSSample/tvOSSample.xcodeproj">
    </FileRef>
    <FileRef
       location = "group:TestShip/TestShip.xcodeproj">

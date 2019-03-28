@@ -1,23 +1,23 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 #import "UALocation+Internal.h"
 #import "UAPreferenceDataStore+Internal.h"
 #import "UAAnalytics.h"
 #import "UALocationEvent.h"
+#import "UATestSystemVersion.h"
+
 
 @interface UALocationTest : UABaseTest
 
 @property (nonatomic, strong) UALocation *location;
-@property (nonatomic, strong) UAPreferenceDataStore *dataStore;
 @property (nonatomic, strong) NSNotificationCenter *notificationCenter;
 
 @property (nonatomic, strong) id mockAnalytics;
 @property (nonatomic, strong) id mockLocationManager;
 @property (nonatomic, strong) id mockedApplication;
 @property (nonatomic, strong) id mockedBundle;
-@property (nonatomic, strong) id mockProcessInfo;
-@property (nonatomic, assign) NSUInteger testOSMajorVersion;
+@property (nonatomic, strong) UATestSystemVersion *testSystemVersion;
 
 @end
 
@@ -25,8 +25,6 @@
 
 - (void)setUp {
     [super setUp];
-    self.dataStore = [UAPreferenceDataStore preferenceDataStoreWithKeyPrefix:[NSString stringWithFormat:@"ualocation.test.%@",self.name]];
-    [self.dataStore removeAll]; // start with an empty datastore
 
     self.mockedApplication = [self mockForClass:[UIApplication class]];
     [[[self.mockedApplication stub] andReturn:self.mockedApplication] sharedApplication];
@@ -36,27 +34,16 @@
 
     self.notificationCenter = [[NSNotificationCenter alloc] init];
 
-    self.location = [UALocation locationWithAnalytics:self.mockAnalytics dataStore:self.dataStore notificationCenter:self.notificationCenter];
+    self.testSystemVersion = [[UATestSystemVersion alloc] init];
+    self.testSystemVersion.currentSystemVersion = @"10.0.0";
+
+    self.location = [UALocation locationWithAnalytics:self.mockAnalytics dataStore:self.dataStore notificationCenter:self.notificationCenter systemVersion:self.testSystemVersion];
     self.location.locationManager = self.mockLocationManager;
     self.location.componentEnabled = YES;
 
     self.mockedBundle = [self mockForClass:[NSBundle class]];
     [[[self.mockedBundle stub] andReturn:self.mockedBundle] mainBundle];
     [[[self.mockedBundle stub] andReturn:@"Always"] objectForInfoDictionaryKey:@"NSLocationAlwaysUsageDescription"];
-
-    self.testOSMajorVersion = 10;
-    self.mockProcessInfo = [self mockForClass:[NSProcessInfo class]];
-    [[[self.mockProcessInfo stub] andReturn:self.mockProcessInfo] processInfo];
-
-    [[[[self.mockProcessInfo stub] andDo:^(NSInvocation *invocation) {
-        NSOperatingSystemVersion arg;
-        [invocation getArgument:&arg atIndex:2];
-
-        BOOL result = self.testOSMajorVersion >= arg.majorVersion;
-        [invocation setReturnValue:&result];
-    }] ignoringNonObjectArgs] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){0, 0, 0}];
-
-
 }
 
 - (void)tearDown {
@@ -65,7 +52,6 @@
     [self.mockedApplication stopMocking];
     [self.mockedBundle stopMocking];
 
-    [self.dataStore removeAll];
     self.location = nil;
 
     [super tearDown];
@@ -694,8 +680,9 @@
     [[[self.mockedBundle stub] andReturn:@"Always"] objectForInfoDictionaryKey:@"NSLocationAlwaysAndWhenInUseUsageDescription"];
     [[[self.mockedBundle stub] andReturn:@"When In Use"] objectForInfoDictionaryKey:@"NSLocationWhenInUseUsageDescription"];
 
-    // Set mock iOS version to 11+
-    self.testOSMajorVersion = 11;
+    // Set iOS system version to 11+
+    self.testSystemVersion.currentSystemVersion = @"11.0.0";
+
 
     // Make the app active
     [[[self.mockedApplication stub] andReturnValue:OCMOCK_VALUE(UIApplicationStateActive)] applicationState];
@@ -724,8 +711,8 @@
     // Stop mocking the bundle to remove the description
     [self.mockedBundle stopMocking];
 
-    // Set mock iOS version to 11+
-    self.testOSMajorVersion = 11;
+    // Set iOS system version to 11+
+    self.testSystemVersion.currentSystemVersion = @"11.0.0";
 
     // Make the app active
     [[[self.mockedApplication stub] andReturnValue:OCMOCK_VALUE(UIApplicationStateActive)] applicationState];
@@ -771,6 +758,123 @@
 
     // Verify we did not request location authorization
     [self.mockLocationManager verify];
+}
+
+/**
+ * Test isLocationOptedIn
+ */
+-(void)testIsLocationOptedIn {
+    // mock [CLLocationManager authorizationStatus]
+    __block CLAuthorizationStatus authorizationStatus = kCLAuthorizationStatusNotDetermined;
+    [[[[self.mockLocationManager stub] classMethod] andDo:^(NSInvocation *invocation) {
+        [invocation setReturnValue:(void *)&authorizationStatus];
+    }] authorizationStatus];
+    
+    // Enable location
+    self.location.locationUpdatesEnabled = YES;
+    
+    // Set the location authorization to be not determined and test
+    authorizationStatus = kCLAuthorizationStatusNotDetermined;
+    XCTAssertFalse([self.location isLocationOptedIn]);
+    
+    // set the location authorization to be denied and test
+    authorizationStatus = kCLAuthorizationStatusDenied;
+    XCTAssertFalse([self.location isLocationOptedIn]);
+    
+    // set the location authorization to be restricted and test
+    authorizationStatus = kCLAuthorizationStatusRestricted;
+    XCTAssertFalse([self.location isLocationOptedIn]);
+    
+    // Set the location authorization to be authorized always and test
+    authorizationStatus = kCLAuthorizationStatusAuthorizedAlways;
+    XCTAssertTrue([self.location isLocationOptedIn]);
+    
+    // Set the location authorization to be authorized when in use and test
+    authorizationStatus = kCLAuthorizationStatusAuthorizedWhenInUse;
+    XCTAssertTrue([self.location isLocationOptedIn]);
+
+    // Disable location
+    self.location.locationUpdatesEnabled = NO;
+    XCTAssertFalse([self.location isLocationOptedIn]);
+}
+
+/**
+ * Test isLocationDeniedOrRestricted
+ */
+-(void)testIsLocationDeniedOrRestricted {
+    // mock [CLLocationManager authorizationStatus]
+    __block CLAuthorizationStatus authorizationStatus = kCLAuthorizationStatusNotDetermined;
+    [[[[self.mockLocationManager stub] classMethod] andDo:^(NSInvocation *invocation) {
+        [invocation setReturnValue:(void *)&authorizationStatus];
+    }] authorizationStatus];
+ 
+    // Set the location authorization to be not determined and test
+    authorizationStatus = kCLAuthorizationStatusNotDetermined;
+    XCTAssertFalse([self.location isLocationDeniedOrRestricted]);
+    
+    // set the location authorization to be denied and test
+    authorizationStatus = kCLAuthorizationStatusDenied;
+    XCTAssertTrue([self.location isLocationDeniedOrRestricted]);
+    
+    // set the location authorization to be restricted and test
+    authorizationStatus = kCLAuthorizationStatusRestricted;
+    XCTAssertTrue([self.location isLocationDeniedOrRestricted]);
+    
+    // Set the location authorization to be authorized always and test
+    authorizationStatus = kCLAuthorizationStatusAuthorizedAlways;
+    XCTAssertFalse([self.location isLocationDeniedOrRestricted]);
+    
+    // Set the location authorization to be authorized when in use and test
+    authorizationStatus = kCLAuthorizationStatusAuthorizedWhenInUse;
+    XCTAssertFalse([self.location isLocationDeniedOrRestricted]);
+
+}
+
+/**
+ * Test strings describing authorization status
+ */
+- (void)testLocationPermissionDescription {
+    // mock [CLLocationManager locationServicesEnabled]
+    __block BOOL locationServicesEnabled = NO;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    [[[[self.mockLocationManager stub] classMethod] andDo:^(NSInvocation *invocation) {
+        [invocation setReturnValue:(void *)&locationServicesEnabled];
+    }] locationServicesEnabled];
+#pragma GCC diagnostic pop
+
+    // mock [CLLocationManager authorizationStatus]
+    __block CLAuthorizationStatus authorizationStatus = kCLAuthorizationStatusNotDetermined;
+    [[[[self.mockLocationManager stub] classMethod] andDo:^(NSInvocation *invocation) {
+        [invocation setReturnValue:(void *)&authorizationStatus];
+    }] authorizationStatus];
+
+    // Make significant location unavailable and test
+    locationServicesEnabled = NO;
+    XCTAssertEqualObjects([self.location locationPermissionDescription], @"SYSTEM_LOCATION_DISABLED");
+    
+    // Make significant location available
+    locationServicesEnabled = YES;
+
+    // Set the location authorization to be not determined and test
+    authorizationStatus = kCLAuthorizationStatusNotDetermined;
+    XCTAssertEqualObjects([self.location locationPermissionDescription], @"UNPROMPTED");
+
+    // set the location authorization to be denied and test
+    authorizationStatus = kCLAuthorizationStatusDenied;
+    XCTAssertEqualObjects([self.location locationPermissionDescription], @"NOT_ALLOWED");
+
+    // set the location authorization to be restricted and test
+    authorizationStatus = kCLAuthorizationStatusRestricted;
+    XCTAssertEqualObjects([self.location locationPermissionDescription], @"NOT_ALLOWED");
+    
+    // Set the location authorization to be authorized always and test
+    authorizationStatus = kCLAuthorizationStatusAuthorizedAlways;
+    XCTAssertEqualObjects([self.location locationPermissionDescription], @"ALWAYS_ALLOWED");
+
+    // Set the location authorization to be authorized when in use and test
+    authorizationStatus = kCLAuthorizationStatusAuthorizedWhenInUse;
+    XCTAssertEqualObjects([self.location locationPermissionDescription], @"FOREGROUND_ALLOWED");
 }
 
 /**

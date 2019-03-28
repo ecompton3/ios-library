@@ -19,7 +19,7 @@
 
     XCTestExpectation *takeOffCalled = [self expectationWithDescription:@"Takeoff called"];
 
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
         XCTAssertThrowsSpecificNamed([UAirship takeOff:config],
                                      NSException, UAirshipTakeOffBackgroundThreadException,
                                      @"Calling takeOff on a background thread should throw a UAirshipTakeOffBackgroundThreadException");
@@ -28,7 +28,7 @@
 
 
     // Wait for the test expectations
-    [self waitForExpectationsWithTimeout:10 handler:nil];
+    [self waitForTestExpectations];
 }
 
 @end

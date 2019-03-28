@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 #import "UAPreferenceDataStore+Internal.h"
@@ -6,7 +6,6 @@
 
 @interface UATagGroupsMutationHistoryTest : UABaseTest
 
-@property(nonatomic, strong) UAPreferenceDataStore *dataStore;
 @property(nonatomic, strong) UATagGroupsMutationHistory *mutationHistory;
 
 @end
@@ -15,7 +14,6 @@
 
 - (void)setUp {
     [super setUp];
-    self.dataStore = [UAPreferenceDataStore preferenceDataStoreWithKeyPrefix:@"UATagGroupsMutationHistoryTest"];
     self.mutationHistory = [UATagGroupsMutationHistory historyWithDataStore:self.dataStore];
 }
 

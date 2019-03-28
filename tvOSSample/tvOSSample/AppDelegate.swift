@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 import UIKit
 import AirshipKit
@@ -107,6 +107,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             object: self,
             userInfo:nil)
     }
-    
+
 }
 

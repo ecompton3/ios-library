@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import <UIKit/UIKit.h>
 #import "UABaseTest.h"
@@ -7,7 +7,7 @@
 #import "UAActionArguments+Internal.h"
 #import "UAInbox+Internal.h"
 #import "UAInboxMessageList.h"
-#import "UAirship.h"
+#import "UAirship+Internal.h"
 #import "UAInboxMessage.h"
 #import "UAMessageCenter.h"
 #import "UAPreferenceDataStore+Internal.h"
@@ -16,7 +16,6 @@
 
 @property (nonatomic, strong) UADisplayInboxAction *action;
 @property (nonatomic, strong) NSDictionary *notification;
-@property (nonatomic, strong) UAPreferenceDataStore *dataStore;
 
 @property (nonatomic, strong) id mockMessage;
 @property (nonatomic, strong) id mockInbox;
@@ -38,9 +37,6 @@
 
     self.action = [[UADisplayInboxAction alloc] init];
     
-    self.dataStore = [UAPreferenceDataStore preferenceDataStoreWithKeyPrefix:[NSString stringWithFormat:@"uadisplayinbox.test.%@",self.name]];
-    [self.dataStore removeAll]; // start with an empty datastore
-
     self.mockInboxDelegate = [self mockForProtocol:@protocol(UAInboxDelegate)];
 
     self.notification = @{@"_uamid": @"UAMID"};
@@ -51,7 +47,7 @@
     self.mockMessageCenter = [self mockForClass:[UAMessageCenter class]];
 
     self.mockAirship = [self mockForClass:[UAirship class]];
-    [[[self.mockAirship stub] andReturn:self.mockAirship] shared];
+    [UAirship setSharedAirship:self.mockAirship];
     [[[self.mockAirship stub] andReturn:self.mockMessageCenter] messageCenter];
 
     self.mockInbox = [self mockForClass:[UAInbox class]];
@@ -59,13 +55,6 @@
     [[[self.mockAirship stub] andReturn:self.mockInbox] inbox];
 
 }
-
-- (void)tearDown {
-    [self.dataStore removeAll];
-
-    [super tearDown];
-}
-
 
 /**
  * Test the action accepts any foreground situation.
@@ -122,7 +111,7 @@
     [self verifyActionPerformWithActionArguments:args expectedFetchResult:UAActionFetchResultNoData];
     
     // Wait for it to complete
-    [self waitForExpectationsWithTimeout:1 handler:nil];
+    [self waitForTestExpectations];
     
     // Verify delegate calls
     [self.mockInboxDelegate verify];
@@ -152,7 +141,7 @@
     [self verifyActionPerformWithActionArguments:args expectedFetchResult:UAActionFetchResultNoData];
     
     // Wait for it to complete
-    [self waitForExpectationsWithTimeout:1 handler:nil];
+    [self waitForTestExpectations];
     
     // Verify delegate calls
     [self.mockInboxDelegate verify];
@@ -184,7 +173,7 @@
     [self verifyActionPerformWithActionArguments:args expectedFetchResult:UAActionFetchResultNewData];
 
     // Wait for it to complete
-    [self waitForExpectationsWithTimeout:1 handler:nil];
+    [self waitForTestExpectations];
     
     // Verify delegate calls
     [self.mockInboxDelegate verify];
@@ -214,7 +203,7 @@
     [self verifyActionPerformWithActionArguments:args expectedFetchResult:UAActionFetchResultFailed];
     
     // Wait for it to complete
-    [self waitForExpectationsWithTimeout:1 handler:nil];
+    [self waitForTestExpectations];
     
     // Verify delegate calls
     [self.mockInboxDelegate verify];
@@ -241,7 +230,7 @@
     [self verifyActionPerformWithActionArguments:args expectedFetchResult:UAActionFetchResultNoData];
 
     // Wait for it to complete
-    [self waitForExpectationsWithTimeout:1 handler:nil];
+    [self waitForTestExpectations];
     
     // Verify delegate calls
     [self.mockInboxDelegate verify];
@@ -271,7 +260,7 @@
     [self verifyActionPerformWithActionArguments:args expectedFetchResult:UAActionFetchResultNoData];
 
     // Wait for it to complete
-    [self waitForExpectationsWithTimeout:1 handler:nil];
+    [self waitForTestExpectations];
     
     // Verify delegate calls
     [self.mockInboxDelegate verify];
@@ -300,7 +289,7 @@
     [self verifyActionPerformWithActionArguments:args expectedFetchResult:UAActionFetchResultNoData];
 
     // Wait for it to complete
-    [self waitForExpectationsWithTimeout:1 handler:nil];
+    [self waitForTestExpectations];
     
     // Verify it was displayed
     [self.mockMessageCenter verify];
@@ -326,7 +315,7 @@
     [self verifyActionPerformWithActionArguments:args expectedFetchResult:UAActionFetchResultNoData];
 
     // Wait for it to complete
-    [self waitForExpectationsWithTimeout:1 handler:nil];
+    [self waitForTestExpectations];
     
     // Verify it was displayed
     [self.mockMessageCenter verify];

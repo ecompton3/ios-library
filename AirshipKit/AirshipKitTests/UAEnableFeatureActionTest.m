@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 
@@ -17,7 +17,6 @@
 @property(nonatomic, strong) id mockPush;
 @property(nonatomic, strong) id mockLocation;
 @property(nonatomic, strong) id mockAirship;
-@property(nonatomic, strong) id mockLocationManager;
 @property(nonatomic, strong) id mockPushRegistration;
 @property(nonatomic, strong) id mockApplication;
 
@@ -33,7 +32,6 @@
     self.mockPush = [self strictMockForClass:[UAPush class]];
     self.mockLocation = [self strictMockForClass:[UALocation class]];
     self.mockAirship = [self strictMockForClass:[UAirship class]];
-    self.mockLocationManager = [self mockForClass:[CLLocationManager class]];
     self.mockPushRegistration = [self mockForProtocol:@protocol(UAAPNSRegistrationProtocol)];
     self.mockApplication = [self mockForClass:[UIApplication class]];
 
@@ -49,7 +47,6 @@
     [self.mockLocation stopMocking];
     [self.mockAirship stopMocking];
     [self.mockPushRegistration stopMocking];
-    [self.mockLocationManager stopMocking];
     [self.mockApplication stopMocking];
 
     [UAirship setSharedAirship:nil];
@@ -105,19 +102,17 @@
 
     [[self.mockPush expect] userPromptedForNotifications];
     [[self.mockPush expect] setUserPushNotificationsEnabled:YES];
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    [[self.mockApplication reject] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
-#pragma GCC diagnostic pop
+    [[self.mockApplication reject] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]
+                                   options:OCMOCK_ANY
+                         completionHandler:OCMOCK_ANY];
 
     [self.action performWithArguments:arguments completionHandler:^(UAActionResult *result) {
         [expectation fulfill];
     }];
 
     // Wait for the test expectations
-    [self waitForExpectationsWithTimeout:1 handler:^(NSError *error) {
-        [self.mockPush verify];
-    }];
+    [self waitForTestExpectations];
+    [self.mockPush verify];
 }
 
 - (void)testEnableUserNotificationsOptedOut {
@@ -138,36 +133,34 @@
     [[[self.mockPush stub] andReturnValue:@YES] userPromptedForNotifications];
 
     [[self.mockPush expect] setUserPushNotificationsEnabled:YES];
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    [[self.mockApplication expect] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
-#pragma GCC diagnostic pop
+    [[[self.mockApplication stub] andDo:^(NSInvocation *invocation) {
+        void *arg;
+        [invocation getArgument:&arg atIndex:4];
+        void (^handler)(BOOL) = (__bridge void (^)(BOOL))arg;
+        handler(YES);
+    }] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString] options:OCMOCK_ANY completionHandler:OCMOCK_ANY];
 
     [self.action performWithArguments:arguments completionHandler:^(UAActionResult *result) {
         [actionPerformed fulfill];
     }];
 
     // Wait for the test expectations
-    [self waitForExpectationsWithTimeout:2.0 handler:^(NSError *error) {
-        [self.mockApplication verify];
-        [self.mockPush verify];
-    }];
+    [self waitForTestExpectations];
+    [self.mockPush verify];
 }
 
 - (void)testEnableLocation {
     __block BOOL actionPerformed = NO;
 
-    [[[self.mockLocationManager stub] andReturnValue:@(kCLAuthorizationStatusNotDetermined)] authorizationStatus];
-
+    [[[self.mockLocation stub] andReturnValue:@(NO)] isLocationDeniedOrRestricted];
 
     UAActionArguments *arguments = [[UAActionArguments alloc] init];
     arguments.value = UAEnableLocationActionValue;
 
     [[self.mockLocation expect] setLocationUpdatesEnabled:YES];
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    [[self.mockApplication reject] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
-#pragma GCC diagnostic pop
+    [[self.mockApplication reject] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]
+                                   options:OCMOCK_ANY
+                         completionHandler:OCMOCK_ANY];
 
     [self.action performWithArguments:arguments completionHandler:^(UAActionResult *result) {
         actionPerformed = YES;
@@ -180,16 +173,19 @@
 - (void)testEnableLocationOptedOut {
     __block BOOL actionPerformed = NO;
 
-    [[[self.mockLocationManager stub] andReturnValue:@(kCLAuthorizationStatusDenied)] authorizationStatus];
+    [[[self.mockLocation stub] andReturnValue:@(YES)] isLocationDeniedOrRestricted];
 
     UAActionArguments *arguments = [[UAActionArguments alloc] init];
     arguments.value = UAEnableLocationActionValue;
 
     [[self.mockLocation expect] setLocationUpdatesEnabled:YES];
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    [[self.mockApplication expect] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
-#pragma GCC diagnostic pop
+    [[[self.mockApplication stub] andDo:^(NSInvocation *invocation) {
+        void *arg;
+        [invocation getArgument:&arg atIndex:4];
+        void (^handler)(BOOL) = (__bridge void (^)(BOOL))arg;
+        handler(YES);
+    }] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString] options:OCMOCK_ANY completionHandler:OCMOCK_ANY];
+
 
     [self.action performWithArguments:arguments completionHandler:^(UAActionResult *result) {
         actionPerformed = YES;
@@ -202,17 +198,16 @@
 - (void)testEnableBackgroundLocation {
     __block BOOL actionPerformed = NO;
 
-    [[[self.mockLocationManager stub] andReturnValue:@(kCLAuthorizationStatusNotDetermined)] authorizationStatus];
+    [[[self.mockLocation stub] andReturnValue:@(NO)] isLocationDeniedOrRestricted];
 
     UAActionArguments *arguments = [[UAActionArguments alloc] init];
     arguments.value = UAEnableBackgroundLocationActionValue;
 
     [[self.mockLocation expect] setLocationUpdatesEnabled:YES];
     [[self.mockLocation expect] setBackgroundLocationUpdatesAllowed:YES];
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    [[self.mockApplication reject] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
-#pragma GCC diagnostic pop
+    [[self.mockApplication reject] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]
+                                   options:OCMOCK_ANY
+                         completionHandler:OCMOCK_ANY];
 
     [self.action performWithArguments:arguments completionHandler:^(UAActionResult *result) {
         actionPerformed = YES;
@@ -225,17 +220,20 @@
 - (void)testEnableBackgroundLocationOptedOut {
     __block BOOL actionPerformed = NO;
 
-    [[[self.mockLocationManager stub] andReturnValue:@(kCLAuthorizationStatusDenied)] authorizationStatus];
+    [[[self.mockLocation stub] andReturnValue:@(NO)] isLocationDeniedOrRestricted];
 
     UAActionArguments *arguments = [[UAActionArguments alloc] init];
     arguments.value = UAEnableBackgroundLocationActionValue;
 
     [[self.mockLocation expect] setLocationUpdatesEnabled:YES];
     [[self.mockLocation expect] setBackgroundLocationUpdatesAllowed:YES];
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    [[self.mockApplication expect] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
-#pragma GCC diagnostic pop
+    [[[self.mockApplication stub] andDo:^(NSInvocation *invocation) {
+        void *arg;
+        [invocation getArgument:&arg atIndex:4];
+        void (^handler)(BOOL) = (__bridge void (^)(BOOL))arg;
+        handler(YES);
+    }] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString] options:OCMOCK_ANY completionHandler:OCMOCK_ANY];
+
 
     [self.action performWithArguments:arguments completionHandler:^(UAActionResult *result) {
         actionPerformed = YES;

@@ -1,10 +1,10 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 
 #import "UAEventAPIClient+Internal.h"
 #import "UAConfig.h"
-#import "UAirship.h"
+#import "UAirship+Internal.h"
 #import "UAPush+Internal.h"
 #import "UAKeychainUtils+Internal.h"
 
@@ -13,10 +13,8 @@
 @property (nonatomic, strong) id mockAirship;
 @property (nonatomic, strong) id mockTimeZoneClass;
 @property (nonatomic, strong) id mockLocaleClass;
-@property (nonatomic, strong) id mockKeychainClass;
 
 @property (nonatomic, strong) id mockSession;
-@property (nonatomic, strong) UAConfig *config;
 @property (nonatomic, strong) UAEventAPIClient *client;
 @end
 
@@ -25,19 +23,15 @@
 - (void)setUp {
     [super setUp];
 
-    self.mockKeychainClass = [self strictMockForClass:[UAKeychainUtils class]];
-    [[[[self.mockKeychainClass stub] classMethod] andReturn:@"some-device-ID"] getDeviceID];
-
     self.mockLocaleClass = [self strictMockForClass:[NSLocale class]];
     self.mockTimeZoneClass = [self strictMockForClass:[NSTimeZone class]];
 
     self.mockPush = [self mockForClass:[UAPush class]];
 
     self.mockAirship = [self mockForClass:[UAirship class]];
-    [[[self.mockAirship stub] andReturn:self.mockAirship] shared];
+    [UAirship setSharedAirship:self.mockAirship];
     [[[self.mockAirship stub] andReturn:self.mockPush] push];
 
-    self.config = [UAConfig config];
     self.mockSession = [self mockForClass:[UARequestSession class]];
     self.client = [UAEventAPIClient clientWithConfig:self.config session:self.mockSession];
 }
@@ -48,7 +42,6 @@
     [self.mockTimeZoneClass stopMocking];
     [self.mockLocaleClass stopMocking];
     [self.mockSession stopMocking];
-    [self.mockKeychainClass stopMocking];
 
     [super tearDown];
 }
@@ -167,7 +160,7 @@
         [expectation fulfill];
     }];
 
-    [self waitForExpectationsWithTimeout:10 handler:nil];
+    [self waitForTestExpectations];
 }
 
 

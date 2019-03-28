@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 #import <objc/runtime.h>
@@ -14,8 +14,6 @@
 @property (nonatomic, strong) id mockApplication;
 @property (nonatomic, strong) id mockUserNotificationCenter;
 @property (nonatomic, strong) id notificationCenterDelegate;
-@property (nonatomic, strong) id mockProcessInfo;
-@property (nonatomic, assign) int testOSMajorVersion;
 
 @property (nonatomic, assign) Class GeneratedClassForAppDelegate;
 @property (nonatomic, assign) Class GeneratedClassForNotificationCenterDelegate;
@@ -25,19 +23,6 @@
 
 - (void)setUp {
     [super setUp];
-
-    // Set default OS major version to 10 by default
-    self.testOSMajorVersion = 10;
-    self.mockProcessInfo = [self mockForClass:[NSProcessInfo class]];
-    [[[self.mockProcessInfo stub] andReturn:self.mockProcessInfo] processInfo];
-
-    [[[[self.mockProcessInfo stub] andDo:^(NSInvocation *invocation) {
-        NSOperatingSystemVersion arg;
-        [invocation getArgument:&arg atIndex:2];
-
-        BOOL result = self.testOSMajorVersion >= arg.majorVersion;
-        [invocation setReturnValue:&result];
-    }] ignoringNonObjectArgs] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){0, 0, 0}];
 
     self.mockAppIntegration = [self mockForClass:[UAAppIntegration class]];
 
@@ -105,8 +90,6 @@
  * Test UNUserNotificationCenter's setDelegate is called to set the delegate to the dummy delegate by default.
  */
 - (void)testProxyUserNotificationCenterSetDummyDelegate {
-    self.testOSMajorVersion = 10;
-
     // Expect the setDelegate call
     [[self.mockUserNotificationCenter expect] setDelegate:[OCMArg checkWithBlock:^BOOL(id obj) {
         return [obj isKindOfClass:[UAAutoIntegrationDummyDelegate class]];
@@ -236,17 +219,15 @@
             appDelegateResult = allBackgroundFetchResults[j];
 
             // Verify that the expected value is returned from combining the two results
-            [self.delegate application:[UIApplication sharedApplication]
-     performFetchWithCompletionHandler:^(UIBackgroundFetchResult result){
-                    XCTAssertEqual(expectedResult, result);
-                    [callBackFinished fulfill];
-                }];
+            [self.delegate application:[UIApplication sharedApplication] performFetchWithCompletionHandler:^(UIBackgroundFetchResult result){
+                XCTAssertEqual(expectedResult, result);
+                [callBackFinished fulfill];
+            }];
 
             // Wait for the test expectations
-            [self waitForExpectationsWithTimeout:1 handler:^(NSError *error) {
-                XCTAssertTrue(fetchCalled);
-                XCTAssertTrue(appDelegateCalled);
-            }];
+            [self waitForTestExpectations];
+            XCTAssertTrue(fetchCalled);
+            XCTAssertTrue(appDelegateCalled);
         }
     }
 
@@ -324,18 +305,17 @@
             appDelegateResult = allBackgroundFetchResults[j];
 
             // Verify that the expected value is returned from combining the two results
-            [self.delegate application:[UIApplication sharedApplication]
-          didReceiveRemoteNotification:expectedNotification
+            [self.delegate application:[UIApplication sharedApplication] didReceiveRemoteNotification:expectedNotification
                 fetchCompletionHandler:^(UIBackgroundFetchResult result){
                     XCTAssertEqual(expectedResult, result);
                     [callBackFinished fulfill];
                 }];
 
             // Wait for the test expectations
-            [self waitForExpectationsWithTimeout:1 handler:^(NSError *error) {
-                XCTAssertTrue(pushCalled);
-                XCTAssertTrue(appDelegateCalled);
-            }];
+            [self waitForTestExpectations];
+
+            XCTAssertTrue(pushCalled);
+            XCTAssertTrue(appDelegateCalled);
         }
     }
 }
@@ -383,8 +363,6 @@
 #pragma UNUserNotificationCenterDelegate callbacks
 
 - (void)testProxyWillPresentNotification {
-    self.testOSMajorVersion = 10;
-    
     [self createnotificationCenterDelegate];
     
     XCTestExpectation *callBackFinished = [self expectationWithDescription:@"Notification Center delegate callback called"];
@@ -454,18 +432,15 @@
                                           completionHandlerCalled = YES;
                                       }];
     
-    [self waitForExpectationsWithTimeout:100 handler:^(NSError *error) {
-        XCTAssertTrue(completionHandlerCalled);
-        XCTAssertTrue(notificationCenterDelegateCalled);
-        XCTAssertTrue(appIntegrationForWillPresentNotificationCalled);
-        XCTAssertTrue(appIntegrationForHandleForegroundNotificationCalled);
-    }];
+    [self waitForTestExpectations];
+    XCTAssertTrue(completionHandlerCalled);
+    XCTAssertTrue(notificationCenterDelegateCalled);
+    XCTAssertTrue(appIntegrationForWillPresentNotificationCalled);
+    XCTAssertTrue(appIntegrationForHandleForegroundNotificationCalled);
 }
 
 
 - (void)testProxyDidReceiveNotificationResponse {
-    self.testOSMajorVersion = 10;
-    
     [self createnotificationCenterDelegate];
     
     XCTestExpectation *callBackFinished = [self expectationWithDescription:@"Notification Centert delegate callback called"];
@@ -516,12 +491,10 @@
                                           completionHandlerCalled = YES;
                                       }];
     
-    [self waitForExpectationsWithTimeout:1 handler:^(NSError *error) {
-        XCTAssertTrue(completionHandlerCalled);
-        XCTAssertTrue(notificationCenterDelegateCalled);
-        XCTAssertTrue(appIntegrationCalled);
-    }];
-    
+    [self waitForTestExpectations];
+    XCTAssertTrue(completionHandlerCalled);
+    XCTAssertTrue(notificationCenterDelegateCalled);
+    XCTAssertTrue(appIntegrationCalled);
 }
 
 

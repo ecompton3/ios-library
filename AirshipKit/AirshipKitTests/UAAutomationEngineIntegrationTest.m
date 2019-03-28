@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 #import "UAAutomationEngine+Internal.h"
@@ -15,6 +15,7 @@
 #import "UAAutomation+Internal.h"
 #import "UAApplicationMetrics+Internal.h"
 #import "UATestDispatcher.h"
+#import "UATestDate.h"
 
 @interface UAAutomationEngineIntegrationTest : UABaseTest
 @property (nonatomic, strong) UAAutomationEngine *automationEngine;
@@ -23,9 +24,11 @@
 @property (nonatomic, strong) id mockDelegate;
 @property (nonatomic, strong) id mockMetrics;
 @property (nonatomic, strong) id mockAirship;
-@property (nonatomic, strong) id mockTimerScheduler;
+@property (nonatomic, strong) UATimerScheduler *timerScheduler;
 @property (nonatomic, strong) NSNotificationCenter *notificationCenter;
 @property (nonatomic, strong) UATestDispatcher *dispatcher;
+@property (nonatomic, copy) void (^timerSchedulerBlock)(NSTimer *);
+@property (nonatomic, strong) UATestDate *testDate;
 @end
 
 #define UAAUTOMATIONENGINETESTS_SCHEDULE_LIMIT 100
@@ -35,23 +38,30 @@
 - (void)setUp {
     [super setUp];
 
+    self.testDate = [[UATestDate alloc] initWithAbsoluteTime:[NSDate date]];
+
     self.dispatcher = [UATestDispatcher testDispatcher];
 
     // Set up a mocked application
     self.mockedApplication = [self mockForClass:[UIApplication class]];
-    [[[self.mockedApplication stub] andReturn:self.mockedApplication] sharedApplication];
 
     self.mockDelegate = [self mockForProtocol:@protocol(UAAutomationEngineDelegate)];
     [[[self.mockDelegate stub] andCall:@selector(createScheduleInfoWithBuilder:) onObject:self] createScheduleInfoWithBuilder:OCMOCK_ANY];
 
     self.testStore = [UAAutomationStore automationStoreWithStoreName:@"UAAutomationEngine.test"
                                                        scheduleLimit:UAAUTOMATIONENGINETESTS_SCHEDULE_LIMIT
-                                                            inMemory:YES];
+                                                            inMemory:YES
+                                                                date:self.testDate];
 
     self.mockAirship = [self mockForClass:[UAirship class]];
-    [[[self.mockAirship stub] andReturn:self.mockAirship] shared];
+    [UAirship setSharedAirship:self.mockAirship];
 
-    self.mockTimerScheduler = [self mockForClass:[UATimerScheduler class]];
+
+    self.timerScheduler = [UATimerScheduler timerSchedulerWithSchedulerBlock:^(NSTimer *timer) {
+        if (self.timerSchedulerBlock) {
+            self.timerSchedulerBlock(timer);
+        }
+    }];
 
     self.mockMetrics = [self mockForClass:[UAApplicationMetrics class]];
     [[[self.mockAirship stub] andReturn:self.mockMetrics] applicationMetrics];
@@ -60,9 +70,11 @@
     self.notificationCenter = [[NSNotificationCenter alloc] init];
 
     self.automationEngine = [UAAutomationEngine automationEngineWithAutomationStore:self.testStore
-                                                                     timerScheduler:self.mockTimerScheduler
+                                                                     timerScheduler:self.timerScheduler
                                                                  notificationCenter:self.notificationCenter
-                                                                         dispatcher:self.dispatcher];
+                                                                         dispatcher:self.dispatcher
+                                                                        application:self.mockedApplication
+                                                                               date:self.testDate];
 
     self.automationEngine.delegate = self.mockDelegate;
     [self.automationEngine cancelAll];
@@ -332,7 +344,7 @@
     [self waitForTestExpectations];
 }
 
-- (void)testGetAll {
+- (void)testGetAllUnended {
     NSMutableArray *expectedSchedules = [NSMutableArray arrayWithCapacity:15];
 
     // Schedule some actions
@@ -354,7 +366,24 @@
         }];
     }
 
-    XCTestExpectation *testExpectation = [self expectationWithDescription:@"schedules fetched properly"];
+    // schedule action with end date in the past - should not be returned later
+    XCTestExpectation *testExpectation = [self expectationWithDescription:@"scheduled actions"];
+
+    UAActionScheduleInfo *scheduleInfo = [UAActionScheduleInfo scheduleInfoWithBuilderBlock:^(UAActionScheduleInfoBuilder *builder) {
+        UAScheduleTrigger *foregroundTrigger = [UAScheduleTrigger foregroundTriggerWithCount:2];
+        builder.actions = @{@"oh": @"hi"};
+        builder.triggers = @[foregroundTrigger];
+        builder.end = [NSDate dateWithTimeIntervalSince1970:0];
+    }];
+    
+    [self.automationEngine schedule:scheduleInfo completionHandler:^(UASchedule *schedule) {
+        XCTAssertEqual(scheduleInfo, schedule.info);
+        XCTAssertNotNil(schedule.identifier);
+        
+        [testExpectation fulfill];
+    }];
+
+    testExpectation = [self expectationWithDescription:@"schedules fetched properly"];
 
     // Verify we are able to get the schedules
     [self.automationEngine getSchedules:^(NSArray<UASchedule *> *result) {
@@ -362,6 +391,57 @@
         [testExpectation fulfill];
     }];
 
+    [self waitForTestExpectations];
+}
+
+- (void)testGetAll {
+    NSMutableArray *expectedSchedules = [NSMutableArray arrayWithCapacity:15];
+    
+    // Schedule some actions
+    for (int i = 0; i < 10; i++) {
+        XCTestExpectation *testExpectation = [self expectationWithDescription:@"scheduled actions"];
+        
+        UAActionScheduleInfo *scheduleInfo = [UAActionScheduleInfo scheduleInfoWithBuilderBlock:^(UAActionScheduleInfoBuilder *builder) {
+            UAScheduleTrigger *foregroundTrigger = [UAScheduleTrigger foregroundTriggerWithCount:2];
+            builder.actions = @{@"oh": @"hi"};
+            builder.triggers = @[foregroundTrigger];
+        }];
+        
+        [self.automationEngine schedule:scheduleInfo completionHandler:^(UASchedule *schedule) {
+            XCTAssertEqual(scheduleInfo, schedule.info);
+            XCTAssertNotNil(schedule.identifier);
+            
+            [expectedSchedules addObject:schedule];
+            [testExpectation fulfill];
+        }];
+    }
+    
+    // schedule action with end date in the past - should be returned later
+    XCTestExpectation *testExpectation = [self expectationWithDescription:@"scheduled actions"];
+    
+    UAActionScheduleInfo *scheduleInfo = [UAActionScheduleInfo scheduleInfoWithBuilderBlock:^(UAActionScheduleInfoBuilder *builder) {
+        UAScheduleTrigger *foregroundTrigger = [UAScheduleTrigger foregroundTriggerWithCount:2];
+        builder.actions = @{@"oh": @"hi"};
+        builder.triggers = @[foregroundTrigger];
+        builder.end = [NSDate dateWithTimeIntervalSince1970:0];
+    }];
+    
+    [self.automationEngine schedule:scheduleInfo completionHandler:^(UASchedule *schedule) {
+        XCTAssertEqual(scheduleInfo, schedule.info);
+        XCTAssertNotNil(schedule.identifier);
+        
+        [expectedSchedules addObject:schedule];
+        [testExpectation fulfill];
+    }];
+    
+    testExpectation = [self expectationWithDescription:@"schedules fetched properly"];
+    
+    // Verify we are able to get the schedules
+    [self.automationEngine getAllSchedules:^(NSArray<UASchedule *> *result) {
+        XCTAssertEqualObjects([NSSet setWithArray:expectedSchedules], [NSSet setWithArray:result]);
+        [testExpectation fulfill];
+    }];
+    
     [self waitForTestExpectations];
 }
 
@@ -467,7 +547,7 @@
 - (void)testGetExpiredSchedules {
     __block NSString *scheduleIdentifier;
 
-    NSDate *futureDate = [NSDate dateWithTimeIntervalSinceNow:100];
+    NSDate *futureDate = [NSDate dateWithTimeInterval:100 sinceDate:self.testDate.now];
 
     UAActionScheduleInfo *scheduleInfo = [UAActionScheduleInfo scheduleInfoWithBuilderBlock:^(UAActionScheduleInfoBuilder *builder) {
         UAScheduleTrigger *foregroundTrigger = [UAScheduleTrigger foregroundTriggerWithCount:2];
@@ -501,9 +581,8 @@
     // Make sure we verified the schedule being availble before mocking the date
     [self waitForTestExpectations];
 
-    // Mock the date to return the futureDate + 1 second for date
-    id mockedDate = [self mockForClass:[NSDate class]];
-    [[[mockedDate stub] andReturn:[futureDate dateByAddingTimeInterval:1]] date];
+    // Shift time to one second after the futureDate
+    self.testDate.timeOffset = [futureDate timeIntervalSinceDate:self.testDate.now] + 1;
 
     // Verify getScheduleWithIdentifier:completionHandler: does not return the expired schedule
     XCTestExpectation *identifierExpectation = [self expectationWithDescription:@"fetched schedule"];
@@ -529,7 +608,7 @@
 }
 
 - (void)testScheduleDeletesExpiredSchedules {
-    NSDate *futureDate = [NSDate dateWithTimeIntervalSinceNow:100];
+    NSDate *futureDate = [NSDate dateWithTimeInterval:100 sinceDate:self.testDate.now];
 
     UAActionScheduleInfo *scheduleInfo = [UAActionScheduleInfo scheduleInfoWithBuilderBlock:^(UAActionScheduleInfoBuilder *builder) {
         UAScheduleTrigger *foregroundTrigger = [UAScheduleTrigger foregroundTriggerWithCount:2];
@@ -549,9 +628,8 @@
     // Make sure we verified the schedule being availble before mocking the date
     [self waitForTestExpectations];
 
-    // Mock the date to return the futureDate + 1 second for date
-    id mockedDate = [self mockForClass:[NSDate class]];
-    [[[mockedDate stub] andReturn:[futureDate dateByAddingTimeInterval:1]] date];
+    // Shift time to one second after the futureDate
+    self.testDate.timeOffset = [futureDate timeIntervalSinceDate:self.testDate.now] + 1;
 
     // Schedule more actions
     scheduleInfo = [UAActionScheduleInfo scheduleInfoWithBuilderBlock:^(UAActionScheduleInfoBuilder *builder) {
@@ -760,13 +838,11 @@
         builder.seconds = 1;
     }];
 
-    [self verifyDelay:delay fulfillmentBlock:^{
-        [[[self.mockTimerScheduler expect] andDo:^(NSInvocation *invocation) {
-            NSTimer *timer;
-            [invocation getArgument:&timer atIndex:2];
-            [timer fire];
-        }] scheduleTimer:OCMOCK_ANY];
-    }];
+    self.timerSchedulerBlock = ^(NSTimer *timer) {
+        [timer fire];
+    };
+
+    [self verifyDelay:delay fulfillmentBlock:^{}];
 }
 
 - (void)testCancellationTriggers {
@@ -1041,10 +1117,10 @@
 
     XCTestExpectation *timerScheduled = [self expectationWithDescription:@"timer scheduled"];
     __block NSTimer *timer;
-    [[[self.mockTimerScheduler expect] andDo:^(NSInvocation *invocation) {
-        [invocation getArgument:&timer atIndex:2];
+    self.timerSchedulerBlock = ^(NSTimer *t) {
+        timer = t;
         [timerScheduled fulfill];
-    }] scheduleTimer:OCMOCK_ANY];
+    };
 
     // Trigger the scheduled actions
     UACustomEvent *purchase = [UACustomEvent eventWithName:@"purchase"];
@@ -1243,7 +1319,7 @@
     [self.automationEngine pause];
 
     // Create a start date in the future
-    NSDate *startDate = [NSDate dateWithTimeIntervalSinceNow:1000];
+    NSDate *startDate = [NSDate dateWithTimeInterval:100 sinceDate:self.testDate.now];
 
     UAActionScheduleInfo *info = [UAActionScheduleInfo scheduleInfoWithBuilderBlock:^(UAActionScheduleInfoBuilder * _Nonnull builder) {
         builder.actions = @{@"cool": @"story"};
@@ -1294,9 +1370,8 @@
     // Trigger the action, should not trigger any actions
     triggerFireBlock();
 
-    // Mock the date to return the futureDate + 1 second for date
-    id mockedDate = [self mockForClass:[NSDate class]];
-    [[[mockedDate stub] andReturn:[startDate dateByAddingTimeInterval:1]] date];
+    // Shift time to one second after the start date
+    self.testDate.timeOffset = [startDate timeIntervalSinceDate:self.testDate.now] + 1;
 
     [self.automationEngine resume];
 
@@ -1336,7 +1411,9 @@
 - (UAScheduleInfo *)createScheduleInfoWithBuilder:(UAScheduleInfoBuilder *)builder {
     return [[UAActionScheduleInfo alloc] initWithBuilder:builder];
 }
+
 @end
+
 
 
 

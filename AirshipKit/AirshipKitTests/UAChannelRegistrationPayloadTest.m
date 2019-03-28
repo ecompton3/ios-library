@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 #import "UAChannelRegistrationPayload+Internal.h"
@@ -6,6 +6,7 @@
 #import "UAPush+Internal.h"
 #import "UAChannelRegistrationPayload+Internal.h"
 #import "UAAnalytics.h"
+#import "UAirship+Internal.h"
 
 @interface UAChannelRegistrationPayloadTest : UABaseTest
 @property (nonatomic, strong) UAChannelRegistrationPayload *payload;
@@ -26,7 +27,7 @@
     self.mockAnalytics = [self mockForClass:[UAAnalytics class]];
 
     self.mockAirship =[self mockForClass:[UAirship class]];
-    [[[self.mockAirship stub] andReturn:self.mockAirship] shared];
+    [UAirship setSharedAirship:self.mockAirship];
     [[[self.mockAirship stub] andReturn:self.mockAnalytics] analytics];
 
     self.payload = [[UAChannelRegistrationPayload alloc] init];

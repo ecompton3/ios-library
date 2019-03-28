@@ -1,4 +1,4 @@
-/* Copyright 2018 Urban Airship and Contributors */
+/* Copyright Urban Airship and Contributors */
 
 #import "UABaseTest.h"
 #import "UAInboxStore+Internal.h"
@@ -39,7 +39,7 @@
         [testExpectation fulfill];
     }];
 
-     [self waitForExpectationsWithTimeout:5 handler:nil];
+     [self waitForTestExpectations];
 }
 
 - (void)testSyncMessages {
@@ -85,7 +85,7 @@
                                   [secondFetch fulfill];
                               }];
 
-    [self waitForExpectationsWithTimeout:5 handler:nil];
+    [self waitForTestExpectations];
 
 
 }
